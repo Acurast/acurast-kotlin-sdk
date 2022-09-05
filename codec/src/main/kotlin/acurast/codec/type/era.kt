@@ -3,8 +3,7 @@ package acurast.codec.type
 import kotlin.math.log2
 
 /**
- * @name ExtrinsicEra
- * @description The mortal or immortal era of a given extrinsic.
+ * The mortal or immortal era of a given extrinsic.
  */
 public interface ExtrinsicEra: ToU8a
 

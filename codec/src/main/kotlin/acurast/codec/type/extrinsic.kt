@@ -5,8 +5,7 @@ import acurast.codec.toU8a
 import java.math.BigInteger
 
 /**
- * @name ToU8a
- * @description Classes implementing this interface provide a 'toU8a' method to encode the
+ * Classes implementing this interface provide a 'toU8a' method to encode the
  * value as a Uint8Array as per the parity-codec specifications.
  */
 public interface ToU8a {
@@ -14,14 +13,12 @@ public interface ToU8a {
 }
 
 /**
- * @name ExtrinsicCall
- * @description An extrinsic method call.
+ * An extrinsic method call.
  */
 public interface ExtrinsicCall: ToU8a
 
 /**
- * @name ExtrinsicPayload
- * @description The extrinsic payload to be signed.
+ * The extrinsic payload to be signed.
  *
  * @param method The extrinsic method call.
  * @param era The [[ExtrinsicEra]] (mortal or immortal) this signature applies to.
@@ -55,8 +52,7 @@ public data class ExtrinsicPayload(
 }
 
 /**
- * @name Extrinsic
- * @description An extrinsic.
+ * An extrinsic.
  *
  * @param signature The signature used to validate the extrinsic method call.
  * @param method The extrinsic method call.

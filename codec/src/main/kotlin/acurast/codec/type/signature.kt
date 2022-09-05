@@ -5,14 +5,12 @@ import acurast.codec.toU8a
 import java.math.BigInteger
 
 /**
- * @name ExtrinsicPayloadSignature
- * @description The payload signature of a given extrinsic.
+ * The payload signature of a given extrinsic.
  */
 public interface ExtrinsicPayloadSignature: ToU8a
 
 /**
- * @name CurveKind
- * @description Supported elliptic curves.
+ * Supported elliptic curves.
  */
 public enum class CurveKind(public val id: Int) {
     Ed25519(0),
@@ -22,8 +20,7 @@ public enum class CurveKind(public val id: Int) {
 }
 
 /**
- * @name MultiSignature
- * @description The extrinsic signature with the curve identifier, which
+ * The extrinsic signature with the curve identifier, which
  * is used in the scale encoding.
  */
 public class MultiSignature(
@@ -36,8 +33,8 @@ public class MultiSignature(
 }
 
 /**
- * @name ExtrinsicSignature
- * @description Extrinsic method call 'fulfill'.
+ * Extrinsic signature content.
+ *
  * @param signer The [[MultiAddress]] of who signed the extrinsic.
  * @param signature The [[ExtrinsicPayloadSignature]] extrinsic signature.
  * @param era The [[ExtrinsicEra]] (mortal or immortal) this signature applies to.

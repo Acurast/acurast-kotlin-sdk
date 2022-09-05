@@ -3,8 +3,7 @@ package acurast.codec.type
 import acurast.codec.toU8a
 
 /**
- * @name AddressKind
- * @description Supported account identifiers.
+ * Supported account identifiers.
  */
 public enum class AccountIdentifier(public val id: Int) {
     AccountID(0),
@@ -15,8 +14,7 @@ public enum class AccountIdentifier(public val id: Int) {
 }
 
 /**
- * @name MultiAddress
- * @description The signer account identifier used in the scale encoding.
+ * The signer account identifier used in the scale encoding.
  */
 public class MultiAddress(
     private val type: AccountIdentifier,
