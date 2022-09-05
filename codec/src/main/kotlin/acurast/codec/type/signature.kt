@@ -1,7 +1,7 @@
 package acurast.codec.type
 
-import acurast.codec.toCompactU8a
-import acurast.codec.toU8a
+import acurast.codec.extensions.toCompactU8a
+import acurast.codec.extensions.toU8a
 import java.math.BigInteger
 
 /**

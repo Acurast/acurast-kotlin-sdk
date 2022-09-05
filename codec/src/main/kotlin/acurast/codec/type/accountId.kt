@@ -1,6 +1,6 @@
 package acurast.codec.type
 
-import acurast.codec.toU8a
+import acurast.codec.extensions.toU8a
 
 /**
  * Supported account identifiers.

@@ -1,1 +1,2 @@
 include(":codec")
+include(":rpc")

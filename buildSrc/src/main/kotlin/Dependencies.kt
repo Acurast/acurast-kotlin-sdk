@@ -1,8 +1,9 @@
 object Dependencies {
     private object Version {
         const val xxHash = "1.8.0"
-
+        const val json = "20220320"
         const val bouncyCastle = "1.70"
+        const val bitcoinj = "0.16.1"
 
         // Test
         const val junit = "5.+"
@@ -10,8 +11,10 @@ object Dependencies {
     }
 
     const val xxHash = "org.lz4:lz4-java:${Version.xxHash}"
+    const val json = "org.json:json:${Version.json}"
 
     const val bouncyCastle = "org.bouncycastle:bcprov-jdk15on:${Version.bouncyCastle}"
+    const val bitcoinj = "org.bitcoinj:bitcoinj-core:${Version.bitcoinj}"
 
     // Test
     const val kotlinTest = "org.jetbrains.kotlin:kotlin-test:${Build.Kotlin.version}"
