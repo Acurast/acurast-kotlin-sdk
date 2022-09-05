@@ -1,0 +1,47 @@
+image: docker:latest
+
+variables:
+  GOOGLE_TAG: eu.gcr.io/papers-kubernetes/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_SHA
+  GOOGLE_TAG_LATEST: eu.gcr.io/papers-kubernetes/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  variables:
+    BUILD_CONTAINER: build-$CI_COMMIT_SHA
+  before_script:
+    - docker rm -f $BUILD_CONTAINER || true
+  script:
+    - docker build -t $GOOGLE_TAG .
+    - docker run --name $BUILD_CONTAINER $GOOGLE_TAG echo "container ran"
+    - docker cp $BUILD_CONTAINER:/build/jars.zip tezos-kotlin-sdk-jars-$CI_PIPELINE_ID.zip
+  after_script:
+    - docker rm -f $BUILD_CONTAINER || true
+  tags:
+    - docker
+  artifacts:
+    paths:
+      - tezos-kotlin-sdk-jars-$CI_PIPELINE_ID.zip
+
+unit:
+  allow_failure: true
+  stage: test
+  variables:
+    UNIT_CONTAINER: unit-$CI_COMMIT_SHA
+  before_script:
+    - docker rm -f $UNIT_CONTAINER || true
+  script:
+    - docker run --name $UNIT_CONTAINER $GOOGLE_TAG /bin/bash -c "/build/gradlew --project-dir /build check zipTestReports"
+  after_script:
+    - docker cp $UNIT_CONTAINER:/build/test-reports.zip unit-test-reports-$CI_PIPELINE_ID.zip
+    - docker rm -f $UNIT_CONTAINER || true
+  tags:
+    - docker
+  artifacts:
+    when: always
+    name: "reports-$CI_PIPELINE_ID"
+    paths:
+      - unit-test-reports-$CI_PIPELINE_ID.zip
