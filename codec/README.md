@@ -39,7 +39,7 @@ allprojects {
 
 ```groovy
 dependencies {
-  def acurast_sdk_version = "0.0.1"
+  def acurast_sdk_version = "0.0.2"
 
   implementation "com.github.acurast.acurast-kotlin-sdk:codec:$acurast_sdk_version"
 }
@@ -49,7 +49,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    val acurastSdkVersion = "0.0.1"
+    val acurastSdkVersion = "0.0.2"
 
     implementation("com.github.acurast.acurast-kotlin-sdk:codec:$acurastSdkVersion")
 }
