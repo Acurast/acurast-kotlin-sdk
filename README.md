@@ -7,6 +7,55 @@
 
 A Kotlin library to interact with the Acurast parachain.
 
+## Setup
+
+To add the SDK into your project:
+
+1. Make sure the [JitPack](https://jitpack.io/) repository is included in your root `build.gradle` file:
+
+#### Groovy
+
+```groovy
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+#### Kotlin
+```kotlin
+allprojects {
+    repositories {
+        ...
+        maven("https://jitpack.io")
+    }
+}
+```
+
+2. Add the dependencies:
+
+#### Groovy
+```groovy
+dependencies {
+    def sdk_version = "0.0.2"
+
+    implementation "com.github.Acurast:acurast-kotlin-sdk:$sdk_version"
+}
+```
+
+#### Kotlin
+
+```kotlin
+dependencies {
+    val sdkVersion = "0.0.2"
+
+    implementation "com.github.Acurast:acurast-kotlin-sdk:$sdkVersion"
+}
+  ```
+
+
 ## Credits
 
 Special thanks to these libraries, which were used as reference for developing this SDK.
