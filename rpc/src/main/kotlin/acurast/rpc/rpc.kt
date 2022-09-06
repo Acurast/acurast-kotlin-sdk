@@ -25,6 +25,12 @@ private fun JSONRequest(method: String, params: JSONArray = JSONArray()): JSONOb
 public class RPC public constructor(rpc_url: String) {
     private val url: URL = URL(rpc_url);
 
+    private fun handleError(json: JSONObject): Exception {
+        return json.optJSONObject("error")?.let { error ->
+            Exception(error.optString("message"))
+        } ?: Exception("something went wrong")
+    }
+
     /**
      * Submit an extrinsic.
      */
@@ -41,7 +47,10 @@ public class RPC public constructor(rpc_url: String) {
             body.toString().toByteArray(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
-                successCallback(JSONObject(response).optString("result"))
+                val json = JSONObject(response)
+                json.optString("result")?.let { result ->
+                    successCallback(result)
+                } ?: errorCallback(handleError(json))
             },
             errorCallback
         )
@@ -68,9 +77,10 @@ public class RPC public constructor(rpc_url: String) {
             body.toString().toByteArray(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
-                JSONObject(response).optString("result")?.let { result ->
+                val json = JSONObject(response)
+                json.optString("result")?.let { result ->
                     successCallback(ByteBuffer.wrap(result.hexToBa()).readAccountInfo())
-                } ?: errorCallback(Exception("query 'result' not available"))
+                } ?: errorCallback(handleError(json))
             },
             errorCallback
         )
@@ -91,10 +101,11 @@ public class RPC public constructor(rpc_url: String) {
             body.toString().toByteArray(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
-                JSONObject(response).optJSONObject("result")
+                val json = JSONObject(response)
+                json.optJSONObject("result")
                     ?.optString("number")?.let { result ->
                         successCallback(Integer.decode(result))
-                    } ?: errorCallback(Exception("query 'result.block.header.number' not available"))
+                    } ?: errorCallback(handleError(json))
             },
             errorCallback
         )
@@ -116,7 +127,10 @@ public class RPC public constructor(rpc_url: String) {
             body.toString().toByteArray(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
-                successCallback(JSONObject(response).optString("result"))
+                val json = JSONObject(response)
+                json.optString("result")?.let { result ->
+                    successCallback(result)
+                } ?: errorCallback(handleError(json))
             },
             errorCallback
         )
@@ -137,12 +151,13 @@ public class RPC public constructor(rpc_url: String) {
             body.toString().toByteArray(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
-                JSONObject(response).optJSONObject("result")?.let { result ->
+                val json = JSONObject(response)
+                json.optJSONObject("result")?.let { result ->
                     successCallback(RuntimeVersion(
                         result.optInt("specVersion"),
                         result.optInt("transactionVersion")
                     ))
-                } ?: errorCallback(Exception("query 'result.block.header.number' not available"))
+                } ?: errorCallback(handleError(json))
             },
             errorCallback
         )

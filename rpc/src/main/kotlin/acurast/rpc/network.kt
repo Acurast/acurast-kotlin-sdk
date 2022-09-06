@@ -1,6 +1,5 @@
 package acurast.rpc
 
-import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.security.cert.Certificate
@@ -25,7 +24,7 @@ public class Networking {
             readTimeout: Int = HTTP_CONNECT_TIMEOUT
         ) {
             executor.submit {
-                val urlConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
+                val urlConnection: HttpsURLConnection = url.openConnection() as HttpsURLConnection
                 try {
                     urlConnection.requestMethod = method
                     urlConnection.connectTimeout = connectTimeout
@@ -47,9 +46,9 @@ public class Networking {
 
                     val payload = urlConnection.inputStream.bufferedReader().readText()
                     urlConnection.inputStream.close()
-                    //val certificateSha256 = getCertificatePin(urlConnection.serverCertificates.first())
+                    val certificateSha256 = getCertificatePin(urlConnection.serverCertificates.first())
 
-                    successCallback(payload, byteArrayOf())
+                    successCallback(payload, certificateSha256)
                 } catch (exception: Exception) {
                     errorCallback(exception)
                 } finally {
