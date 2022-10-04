@@ -48,9 +48,12 @@ public class RPC public constructor(rpc_url: String) {
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
                 val json = JSONObject(response)
-                json.optString("result")?.let { result ->
+                val result = json.optString("result")
+                if (result == null || result.isEmpty()) {
+                    errorCallback(handleError(json))
+                } else {
                     successCallback(result)
-                } ?: errorCallback(handleError(json))
+                }
             },
             errorCallback
         )
@@ -78,9 +81,12 @@ public class RPC public constructor(rpc_url: String) {
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
                 val json = JSONObject(response)
-                json.optString("result")?.let { result ->
+                val result = json.optString("result")
+                if (result == null || result.isEmpty()) {
+                    errorCallback(handleError(json))
+                } else {
                     successCallback(ByteBuffer.wrap(result.hexToBa()).readAccountInfo())
-                } ?: errorCallback(handleError(json))
+                }
             },
             errorCallback
         )
@@ -102,10 +108,17 @@ public class RPC public constructor(rpc_url: String) {
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
                 val json = JSONObject(response)
-                json.optJSONObject("result")
-                    ?.optString("number")?.let { result ->
-                        successCallback(Integer.decode(result))
-                    } ?: errorCallback(handleError(json))
+                val result = json.optJSONObject("result")
+                if (result == null) {
+                    errorCallback(handleError(json))
+                } else {
+                    val number = result.optString("number")
+                    if (number == null || number.isEmpty()) {
+                        errorCallback(handleError(json))
+                    } else {
+                        successCallback(Integer.decode(number))
+                    }
+                }
             },
             errorCallback
         )
@@ -128,9 +141,12 @@ public class RPC public constructor(rpc_url: String) {
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
                 val json = JSONObject(response)
-                json.optString("result")?.let { result ->
+                val result = json.optString("result")
+                if (result == null || result.isEmpty()) {
+                    errorCallback(handleError(json))
+                } else {
                     successCallback(result)
-                } ?: errorCallback(handleError(json))
+                }
             },
             errorCallback
         )
@@ -152,12 +168,15 @@ public class RPC public constructor(rpc_url: String) {
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response, _ ->
                 val json = JSONObject(response)
-                json.optJSONObject("result")?.let { result ->
+                val result = json.optJSONObject("result")
+                if (result == null) {
+                    errorCallback(handleError(json))
+                } else {
                     successCallback(RuntimeVersion(
                         result.optInt("specVersion"),
                         result.optInt("transactionVersion")
                     ))
-                } ?: errorCallback(handleError(json))
+                }
             },
             errorCallback
         )
