@@ -3,7 +3,7 @@ package acurast.codec.extrinsic
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.type.ExtrinsicCall
 
-private val CALL_INDEX: ByteArray = byteArrayOf(0x28, 0x04);
+private val CALL_INDEX: ByteArray = byteArrayOf(0x28, 0x05);
 
 /**
  * Extrinsic method call 'submitAttestation'.
