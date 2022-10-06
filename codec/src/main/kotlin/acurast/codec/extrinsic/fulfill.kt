@@ -2,8 +2,9 @@ package acurast.codec.extrinsic
 
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.type.ExtrinsicCall
+import acurast.codec.type.MultiAddress
 
-private val FULFILL_CALL_INDEX: ByteArray = byteArrayOf(0x28, 0x03);
+private val CALL_INDEX: ByteArray = byteArrayOf(0x28, 0x04);
 
 /**
  * Extrinsic method call 'fulfill'.
@@ -15,12 +16,12 @@ private val FULFILL_CALL_INDEX: ByteArray = byteArrayOf(0x28, 0x03);
 public data class FulfillCall(
     val script: ByteArray,
     val payload: ByteArray,
-    val requester: ByteArray,
+    val requester: MultiAddress,
 ): ExtrinsicCall {
     override fun toU8a(): ByteArray {
-        return FULFILL_CALL_INDEX +
+        return CALL_INDEX +
                 script.size.toLong().toCompactU8a() + script +
                 payload.size.toLong().toCompactU8a() + payload +
-                byteArrayOf(0x00) + requester
+                requester.toU8a()
     }
 }
