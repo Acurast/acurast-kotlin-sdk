@@ -21,7 +21,6 @@ public class Author(rpc_url: String) : PalletRPC(rpc_url) {
             body.toString(),
             mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
             { response ->
-                System.out.println(response)
                 val json = JSONObject(response)
                 val result = json.optString("result")
                 if (result == "null" || result.isEmpty()) {

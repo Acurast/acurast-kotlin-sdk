@@ -2,7 +2,6 @@ package acurast.rpc
 
 import acurast.codec.extensions.*
 import acurast.codec.type.acurast.StoredJobAssignment
-import acurast.codec.type.acurast.readStoredJobAssignment
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.State
@@ -48,16 +47,33 @@ public class RPC public constructor(rpc_url: String) {
         successCallback: (List<StoredJobAssignment>) -> Unit,
         errorCallback: (Exception) -> Unit
     ) {
-        val key =
-            "Acurast".toByteArray().xxH128() +
+        val indexKey =
+            "AcurastMarketplace".toByteArray().xxH128() +
             "StoredJobAssignment".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId;
 
-        state.getStorage(
-            storageKey = key,
+        // TODO: Improve code
+        state.getKeys(
+            key = indexKey,
             blockHash = blockHash,
-            successCallback = { storage ->
-                successCallback(ByteBuffer.wrap(storage.hexToBa()).readList { readStoredJobAssignment() })
+            successCallback = { keys ->
+                val jobs: MutableList<StoredJobAssignment> = mutableListOf()
+
+                if (keys.isEmpty()) {
+                    successCallback(jobs)
+                } else {
+                    for (key in keys) {
+                        state.queryStorageAt(
+                            storageKey = key.hexToBa(),
+                            blockHash = blockHash,
+                            successCallback = { storage ->
+                                jobs.add(StoredJobAssignment.read(storage[0].changes[0]))
+                                successCallback(jobs)
+                            },
+                            errorCallback = errorCallback
+                        )
+                    }
+                }
             },
             errorCallback = errorCallback
         )

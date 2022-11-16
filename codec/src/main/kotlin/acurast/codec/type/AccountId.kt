@@ -27,6 +27,15 @@ public class MultiAddress(
     }
 }
 
+/**
+ * An account identifier with 32 bytes.
+ */
+public class AccountId32(private val bytes: ByteArray): ToU8a {
+    public override fun toU8a(): ByteArray {
+        return bytes
+    }
+}
+
 public fun ByteBuffer.readAccountId(): MultiAddress {
     this.order(ByteOrder.LITTLE_ENDIAN)
     val ba = ByteArray(32)

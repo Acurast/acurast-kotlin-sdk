@@ -50,3 +50,7 @@ public fun ByteBuffer.readByteArray(): ByteArray {
     get(ba)
     return ba
 }
+
+public fun ByteBuffer.skip(offset: Int) {
+    get(ByteArray(offset))
+}

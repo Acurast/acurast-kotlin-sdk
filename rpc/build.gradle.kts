@@ -4,6 +4,7 @@ dependencies {
     // Kotlin
     implementation(kotlin("stdlib"))
     implementation(Dependencies.json)
+    implementation(Dependencies.gson)
 
 
     // Test
