@@ -1,12 +1,16 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
+import acurast.codec.type.AccountIdentifier
+import acurast.codec.type.MultiAddress
 import acurast.codec.type.acurast.StoredJobAssignment
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.State
 import acurast.rpc.type.AccountInfo
+import acurast.rpc.type.PalletAssetsAssetAccount
 import acurast.rpc.type.readAccountInfo
+import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
 public class RPC public constructor(rpc_url: String) {
@@ -33,6 +37,33 @@ public class RPC public constructor(rpc_url: String) {
             blockHash = blockHash,
             successCallback = { storage ->
                 successCallback(ByteBuffer.wrap(storage.hexToBa()).readAccountInfo())
+            },
+            errorCallback = errorCallback
+        )
+    }
+
+    /**
+     * Query asset information for a given account.
+     */
+    public fun getAccountAssetInfo(
+        assetId: Int,
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        successCallback: (PalletAssetsAssetAccount) -> Unit,
+        errorCallback: (Exception) -> Unit
+    ) {
+        val assetIdBytes = assetId.toU8a();
+        val key =
+            "Assets".toByteArray().xxH128() +
+                    "Account".toByteArray().xxH128() +
+                    assetIdBytes.blake2b(128) + assetIdBytes +
+                    accountId.blake2b(128) + accountId;
+
+        state.getStorage(
+            storageKey = key,
+            blockHash = blockHash,
+            successCallback = { storage ->
+                successCallback(ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount())
             },
             errorCallback = errorCallback
         )
