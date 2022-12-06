@@ -15,7 +15,7 @@ class FulfillTest {
         val payload = byteArrayOf(0,18);
         val requester = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa();
 
-        val call = FulfillCall(callIndex, script, payload, MultiAddress(AccountIdentifier.AccountID, requester));
+        val call = FulfillCall(callIndex, script, payload);
         val extrinsic = Extrinsic(
             ExtrinsicSignature(
                 MultiAddress(AccountIdentifier.AccountID, requester),
@@ -29,7 +29,7 @@ class FulfillTest {
 
         Assert.assertEquals(
             extrinsic.toU8a().toHex(),
-            "41028400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d036cd7e0ccbf780bc3046fa1af28ee8c68bb992270b6cceeefbc1fc08e492b1807d95400f77ee4259cadd39c3e309119750c4d836d955cc7dc74e8591f8ab7878575030000280408001208001200d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+            "bd018400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d036cd7e0ccbf780bc3046fa1af28ee8c68bb992270b6cceeefbc1fc08e492b1807d95400f77ee4259cadd39c3e309119750c4d836d955cc7dc74e8591f8ab78785750300002804080012080012"
         )
     }
 }
