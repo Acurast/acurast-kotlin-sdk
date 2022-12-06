@@ -10,11 +10,12 @@ import java.math.BigInteger
 class FulfillTest {
     @Test
     fun encodeFulfillExtrinsic() {
+        val callIndex = byteArrayOf(0x28, 0x04);
         val script = byteArrayOf(0,18);
         val payload = byteArrayOf(0,18);
         val requester = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa();
 
-        val call = FulfillCall(script, payload, MultiAddress(AccountIdentifier.AccountID, requester));
+        val call = FulfillCall(callIndex, script, payload, MultiAddress(AccountIdentifier.AccountID, requester));
         val extrinsic = Extrinsic(
             ExtrinsicSignature(
                 MultiAddress(AccountIdentifier.AccountID, requester),
