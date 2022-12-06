@@ -1,11 +1,12 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
+import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.Networking
 import org.json.JSONArray
 import org.json.JSONObject
 
-public class Author(rpc_url: String) : PalletRPC(rpc_url) {
+public class Author(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
     /**
      * Submit an extrinsic.
      */

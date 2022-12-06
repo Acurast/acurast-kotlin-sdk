@@ -1,5 +1,6 @@
 package acurast.codec.extensions
 
+import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
@@ -9,12 +10,27 @@ public class ScaleParserException(msg: String?) : Exception(msg)
 @OptIn(ExperimentalUnsignedTypes::class)
 public fun ByteBuffer.readU32(): UInt = order(ByteOrder.LITTLE_ENDIAN).int.toUInt()
 
+public fun ByteBuffer.readU128(): BigInteger {
+    val ba = ByteArray(16)
+    get(ba)
+    return BigInteger(ba.reversedArray())
+}
+
+@ExperimentalUnsignedTypes
+public fun ByteBuffer.readByte(): Byte {
+    return order(ByteOrder.LITTLE_ENDIAN).get()
+}
+
 public fun ByteBuffer.readString(): String {
     this.order(ByteOrder.LITTLE_ENDIAN)
     val size = readCompactInteger()
     val ba = ByteArray(size)
     get(ba)
     return ba.toString(charset = Charset.defaultCharset())
+}
+
+public fun ByteBuffer.readBoolean(): Boolean {
+    return this.get() == 0x01.toByte()
 }
 
 public fun <T> ByteBuffer.readList(elementParser: ByteBuffer.() -> T): List<T> {
@@ -49,6 +65,25 @@ public fun ByteBuffer.readByteArray(): ByteArray {
     val ba = ByteArray(size)
     get(ba)
     return ba
+}
+
+fun ByteBuffer.readOptionalBoolean(): Boolean? {
+    return when (this.get() == 0x00.toByte()) {
+        true -> null
+        else -> this.get() == 0x02.toByte()
+    }
+}
+
+public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer.() -> T): T? {
+    return when (T::class) {
+        Boolean::class -> readOptionalBoolean() as T?
+        else -> {
+            when (readBoolean()) {
+                true -> this.optionalParser()
+                else -> null
+            }
+        }
+    }
 }
 
 public fun ByteBuffer.skip(offset: Int) {

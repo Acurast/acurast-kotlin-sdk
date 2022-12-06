@@ -1,6 +1,7 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
+import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.Networking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,7 +15,7 @@ public data class Header(
     // TODO: add digest field
 )
 
-public class Chain(rpc_url: String) : PalletRPC(rpc_url) {
+public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
     /**
      * Query the hash of a block at a given height.
      */

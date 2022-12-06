@@ -1,57 +1,69 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
-import acurast.codec.type.AccountIdentifier
-import acurast.codec.type.MultiAddress
 import acurast.codec.type.acurast.StoredJobAssignment
+import acurast.rpc.http.HttpHeader
+import acurast.rpc.http.IHttpClientProvider
+import acurast.rpc.http.KtorHttpClientProvider
+import acurast.rpc.http.KtorLogger
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.State
-import acurast.rpc.type.AccountInfo
+import acurast.rpc.type.FrameSystemAccountInfo
 import acurast.rpc.type.PalletAssetsAssetAccount
 import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
-public class RPC public constructor(rpc_url: String) {
-    public val author: Author = Author(rpc_url)
-    public val chain: Chain = Chain(rpc_url)
-    public val state: State = State(rpc_url)
+public class RPC public constructor(
+    rpc_url: String,
+    http_client: IHttpClientProvider = KtorHttpClientProvider(object : KtorLogger() {
+        override fun log(message: String) {
+            println(message)
+        }
+    })
+) {
+    public val author: Author = Author(http_client, rpc_url)
+    public val chain: Chain = Chain(http_client, rpc_url)
+    public val state: State = State(http_client, rpc_url)
 
     /**
      * Query account information. (nonce, etc...)
      */
-    public fun getAccountInfo(
+    public suspend fun getAccountInfo(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        successCallback: (AccountInfo) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): FrameSystemAccountInfo {
         val key =
             "System".toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId;
 
-        state.getStorage(
+        val storage = state.getStorage(
             storageKey = key,
             blockHash = blockHash,
-            successCallback = { storage ->
-                successCallback(ByteBuffer.wrap(storage.hexToBa()).readAccountInfo())
-            },
-            errorCallback = errorCallback
+            headers,
+            requestTimeout,
+            connectionTimeout
         )
+
+        return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
     }
 
     /**
      * Query asset information for a given account.
      */
-    public fun getAccountAssetInfo(
+    public suspend fun getAccountAssetInfo(
         assetId: Int,
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        successCallback: (PalletAssetsAssetAccount) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): PalletAssetsAssetAccount {
         val assetIdBytes = assetId.toU8a();
         val key =
             "Assets".toByteArray().xxH128() +
@@ -59,54 +71,53 @@ public class RPC public constructor(rpc_url: String) {
                     assetIdBytes.blake2b(128) + assetIdBytes +
                     accountId.blake2b(128) + accountId;
 
-        state.getStorage(
+        val storage = state.getStorage(
             storageKey = key,
             blockHash = blockHash,
-            successCallback = { storage ->
-                successCallback(ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount())
-            },
-            errorCallback = errorCallback
+            headers,
+            requestTimeout,
+            connectionTimeout
         )
+
+        return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
     }
 
     /**
      * Get all job assignments for a given account.
      */
-    public fun getJobAssignments(
+    public suspend fun getJobAssignments(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        successCallback: (List<StoredJobAssignment>) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): List<StoredJobAssignment> {
+        val jobs: MutableList<StoredJobAssignment> = mutableListOf()
+
         val indexKey =
             "AcurastMarketplace".toByteArray().xxH128() +
             "StoredJobAssignment".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId;
 
-        // TODO: Improve code
-        state.getKeys(
-            key = indexKey,
+        val keys = state.getKeys(
+            indexKey,
             blockHash = blockHash,
-            successCallback = { keys ->
-                val jobs: MutableList<StoredJobAssignment> = mutableListOf()
-
-                if (keys.isEmpty()) {
-                    successCallback(jobs)
-                } else {
-                    for (key in keys) {
-                        state.queryStorageAt(
-                            storageKey = key.hexToBa(),
-                            blockHash = blockHash,
-                            successCallback = { storage ->
-                                jobs.add(StoredJobAssignment.read(storage[0].changes[0]))
-                                successCallback(jobs)
-                            },
-                            errorCallback = errorCallback
-                        )
-                    }
-                }
-            },
-            errorCallback = errorCallback
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
         )
+
+        for (key in keys) {
+            val result = state.queryStorageAt(
+                storageKey = key.hexToBa(),
+                blockHash = blockHash,
+                headers = headers,
+                requestTimeout = requestTimeout,
+                connectionTimeout = connectionTimeout
+            )
+            jobs.add(StoredJobAssignment.read(result[0].changes[0]))
+        }
+
+        return jobs
     }
 }
