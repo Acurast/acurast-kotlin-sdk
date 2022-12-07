@@ -2,28 +2,22 @@ package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
 import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.Networking
+import acurast.rpc.http.HttpHeader
+import acurast.rpc.type.Header
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigInteger
-
-public data class Header(
-    val parentHash: String,
-    val number: BigInteger,
-    val stateRoot: String,
-    val extrinsicsRoot: String,
-    // TODO: add digest field
-)
 
 public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
     /**
      * Query the hash of a block at a given height.
      */
-    public fun getBlockHash(
+    public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
-        successCallback: (String) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null
+    ): String {
         val param = JSONArray()
         // Add block number if provided
         if (blockNumber != null) {
@@ -32,31 +26,27 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
 
         val body = prepareJSONRequest("chain_getBlockHash", param)
 
-        Networking.httpsPostString(
-            url,
-            body.toString(),
-            mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
-            { response ->
-                val json = JSONObject(response)
-                val result = json.optString("result")
-                if (result == "null" || result.isEmpty()) {
-                    errorCallback(handleError(json))
-                } else {
-                    successCallback(result)
-                }
-            },
-            errorCallback
+        val response = http_client.post(
+            rpc_url,
+            body = body.toString(),
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
         )
+
+        val json = JSONObject(response)
+        return json.optString("result") ?: throw handleError(json)
     }
 
     /**
      * Get the header of a given block.
      */
-    public fun getHeader(
+    public suspend fun getHeader(
         blockHash: ByteArray? = null,
-        successCallback: (Header) -> Unit,
-        errorCallback: (Exception) -> Unit
-    ) {
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null
+    ): Header {
         val param = JSONArray()
         // Add block hash if provided, otherwise the head block will be queried.
         if (blockHash != null) {
@@ -65,32 +55,27 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
 
         val body = prepareJSONRequest("chain_getHeader", param)
 
-        Networking.httpsPostString(
-            url,
-            body.toString(),
-            mapOf(Pair("Accept", "*/*"), Pair("Content-Type", "application/json")),
-            { response ->
-                val json = JSONObject(response)
-                val result = json.optJSONObject("result")
-                if (result == null) {
-                    errorCallback(handleError(json))
-                } else {
-                    val parentHash = result.optString("parentHash")
-                    val number = result.optString("number")
-                    val stateRoot = result.optString("stateRoot")
-                    val extrinsicsRoot = result.optString("extrinsicsRoot")
+        val response = http_client.post(
+            rpc_url,
+            body = body.toString(),
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
+        )
 
-                    successCallback(
-                        Header(
-                            parentHash = parentHash,
-                            number = BigInteger(number.removePrefix("0x"), 16),
-                            stateRoot = stateRoot,
-                            extrinsicsRoot = extrinsicsRoot,
-                        )
-                    )
-                }
-            },
-            errorCallback
+        val json = JSONObject(response)
+        val result = json.optJSONObject("result") ?: throw handleError(json)
+
+        val parentHash = result.optString("parentHash")
+        val number = result.optString("number")
+        val stateRoot = result.optString("stateRoot")
+        val extrinsicsRoot = result.optString("extrinsicsRoot")
+
+        return Header(
+            parentHash = parentHash,
+            number = BigInteger(number.removePrefix("0x"), 16),
+            stateRoot = stateRoot,
+            extrinsicsRoot = extrinsicsRoot,
         )
     }
 }

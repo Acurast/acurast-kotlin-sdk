@@ -5,20 +5,20 @@ import acurast.codec.extensions.readU32
 import java.math.BigInteger
 import java.nio.ByteBuffer
 
-public data class FrameSystemAccountInfoData constructor(
-    var free: BigInteger,
-    var reserved: BigInteger,
-    var miscFrozen: BigInteger,
-    var feeFrozen: BigInteger
-)
-
 public data class FrameSystemAccountInfo @OptIn(ExperimentalUnsignedTypes::class) constructor(
     val nonce: UInt,
     val consumers: UInt,
     val providers: UInt,
     val sufficients: UInt,
     val data: FrameSystemAccountInfoData
-)
+) {
+    public data class FrameSystemAccountInfoData constructor(
+        var free: BigInteger,
+        var reserved: BigInteger,
+        var miscFrozen: BigInteger,
+        var feeFrozen: BigInteger
+    )
+}
 
 @OptIn(ExperimentalUnsignedTypes::class)
 public fun ByteBuffer.readAccountInfo(): FrameSystemAccountInfo {
@@ -27,7 +27,7 @@ public fun ByteBuffer.readAccountInfo(): FrameSystemAccountInfo {
         readU32(),
         readU32(),
         readU32(),
-        FrameSystemAccountInfoData(
+        FrameSystemAccountInfo.FrameSystemAccountInfoData(
             readU128(),
             readU128(),
             readU128(),

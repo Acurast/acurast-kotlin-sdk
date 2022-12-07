@@ -4,7 +4,6 @@ import acurast.codec.extensions.hexToBa
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.pallet.JSONRequest
 import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.FrameSystemAccountInfoData
 import acurast.rpc.type.PalletAssetsAssetAccount
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -48,7 +47,7 @@ class RpcTest {
             consumers = 1U,
             providers = 1U,
             sufficients = 0U,
-            data = FrameSystemAccountInfoData(
+            data = FrameSystemAccountInfo.FrameSystemAccountInfoData(
                 free = BigInteger("1152921504606846976"),
                 reserved = BigInteger.ZERO,
                 miscFrozen = BigInteger.ZERO,

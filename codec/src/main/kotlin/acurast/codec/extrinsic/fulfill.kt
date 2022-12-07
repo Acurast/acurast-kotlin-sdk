@@ -2,7 +2,6 @@ package acurast.codec.extrinsic
 
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.type.ExtrinsicCall
-import acurast.codec.type.MultiAddress
 
 /**
  * Extrinsic method call 'fulfill'.
