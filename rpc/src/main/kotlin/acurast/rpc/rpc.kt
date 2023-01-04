@@ -1,6 +1,7 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
+import acurast.codec.type.acurast.PalletAcurastMarketplaceAssignment
 import acurast.codec.type.acurast.StoredJobAssignment
 import acurast.rpc.http.HttpHeader
 import acurast.rpc.http.IHttpClientProvider
@@ -116,6 +117,49 @@ public class RPC public constructor(
                 connectionTimeout = connectionTimeout
             )
             jobs.add(StoredJobAssignment.read(result[0].changes[0]))
+        }
+
+        return jobs
+    }
+
+
+    /**
+     * Get all job matches for a given account.
+     */
+    public suspend fun getJobMatches(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): List<PalletAcurastMarketplaceAssignment> {
+        val jobs: MutableList<PalletAcurastMarketplaceAssignment> = mutableListOf()
+
+        val indexKey =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredMatches".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId;
+
+        val keys = state.getKeys(
+            indexKey,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
+        )
+
+        for (key in keys) {
+            System.out.println(key)
+            val result = state.queryStorageAt(
+                storageKey = key.hexToBa(),
+                blockHash = blockHash,
+                headers = headers,
+                requestTimeout = requestTimeout,
+                connectionTimeout = connectionTimeout
+            )
+            for (change in result[0].changes) {
+                jobs.add(PalletAcurastMarketplaceAssignment.read(change))
+            }
         }
 
         return jobs
