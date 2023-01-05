@@ -1,4 +1,4 @@
-package acurast.codec.type.acurast
+package acurast.codec.type
 
 import acurast.codec.extensions.*
 import java.io.UnsupportedEncodingException
@@ -177,19 +177,19 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
                 Kind.X1.id -> JunctionsV1(Kind.X1, listOf(JunctionV1.read(buffer)))
                 Kind.X2.id -> JunctionsV1(Kind.X2, listOf(JunctionV1.read(buffer), JunctionV1.read(buffer)))
                 Kind.X3.id -> JunctionsV1(
-                    Kind.X3, 
+                    Kind.X3,
                     listOf(
-                        JunctionV1.read(buffer), 
-                        JunctionV1.read(buffer), 
+                        JunctionV1.read(buffer),
+                        JunctionV1.read(buffer),
                         JunctionV1.read(buffer)
                     )
                 )
                 Kind.X4.id -> JunctionsV1(
-                    Kind.X4, 
+                    Kind.X4,
                     listOf(
-                        JunctionV1.read(buffer), 
-                        JunctionV1.read(buffer), 
-                        JunctionV1.read(buffer), 
+                        JunctionV1.read(buffer),
+                        JunctionV1.read(buffer),
+                        JunctionV1.read(buffer),
                         JunctionV1.read(buffer)
                     )
                 )
@@ -215,7 +215,7 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
                     )
                 )
                 Kind.X7.id -> JunctionsV1(
-                    Kind.X7, 
+                    Kind.X7,
                     listOf(
                         JunctionV1.read(buffer),
                         JunctionV1.read(buffer),

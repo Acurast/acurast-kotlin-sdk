@@ -55,20 +55,19 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
      * Query storage.
      */
     public suspend fun queryStorageAt(
-        storageKey: ByteArray,
+        storageKeys: List<String>,
         blockHash: ByteArray? = null,
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null
     ): List<StorageQueryResult> {
-        val param = JSONArray().put(JSONArray().put((storageKey.toHex())))
+        val param = JSONArray().put(storageKeys.fold(JSONArray()) { acc, key -> acc.put(key) })
         // Add block hash if provided
         if (blockHash != null) {
             param.put(blockHash.toHex())
         }
 
         val body = prepareJSONRequest("state_queryStorageAt", param)
-
 
         val response = http_client.post(
             rpc_url,
@@ -78,8 +77,12 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
             connectionTimeout = connectionTimeout
         )
 
-        val result = JSONObject(response).optJSONArray("result").toString()
-        return GsonBuilder().create().fromJson(result, Array<StorageQueryResult>::class.java).toList()
+        val json = JSONObject(response)
+        if (json.has("result")) {
+            val result = JSONObject(response).optJSONArray("result").toString()
+            return GsonBuilder().create().fromJson(result, Array<StorageQueryResult>::class.java).toList()
+        }
+        throw handleError(json)
     }
 
     /**
