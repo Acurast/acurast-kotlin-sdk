@@ -4,6 +4,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.pow
 
+public fun Long.toU8a(): ByteArray = ByteBuffer.allocate(8)
+    .order(ByteOrder.LITTLE_ENDIAN)
+    .putLong(this)
+    .array()
+
 public fun Long.toCompactU8a(): ByteArray {
     val x = this
     val ret: ByteBuffer

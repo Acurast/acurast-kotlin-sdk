@@ -149,7 +149,6 @@ public class RPC public constructor(
         )
 
         for (key in keys) {
-            System.out.println(key)
             val result = state.queryStorageAt(
                 storageKey = key.hexToBa(),
                 blockHash = blockHash,
