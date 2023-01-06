@@ -14,6 +14,7 @@ public data class JobAssignment(
     public val slot: Int,
     public val feePerExecution: MultiAssetV1,
     public val acknowledged: Boolean,
+    public val sla: SLA
 ) {
     public companion object {
         public fun read(l: List<String>): JobAssignment {
@@ -31,7 +32,25 @@ public data class JobAssignment(
                 jobId = JobIdentifier(requester, script),
                 slot = value.readCompactInteger(),
                 feePerExecution = MultiAssetV1.read(value),
-                acknowledged = value.readBoolean()
+                acknowledged = value.readBoolean(),
+                sla = SLA.read(value)
+            )
+        }
+    }
+}
+
+/**
+ * Keeps track of the SLA during and after a job's schedule is completed.
+ */
+public data class SLA(
+    public val total: Long,
+    public val met: Long
+) {
+    public companion object {
+        public fun read(buffer: ByteBuffer): SLA {
+            return SLA(
+                buffer.long,
+                buffer.long
             )
         }
     }
