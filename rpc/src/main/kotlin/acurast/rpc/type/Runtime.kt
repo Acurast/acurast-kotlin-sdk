@@ -40,7 +40,6 @@ fun ByteBuffer.readMetadata(): RuntimeMetadataV14 {
         readByte().toInt()
     )
 
-    System.out.println(metadata)
     when (metadata.version) {
         14 -> {
             // Skip type definitions

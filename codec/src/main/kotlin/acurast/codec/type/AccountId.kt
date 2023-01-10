@@ -42,3 +42,10 @@ public fun ByteBuffer.readAccountId(): MultiAddress {
     get(ba)
     return MultiAddress(AccountIdentifier.AccountID, ba)
 }
+
+public fun ByteBuffer.readAccountId32(): AccountId32 {
+    this.order(ByteOrder.LITTLE_ENDIAN)
+    val ba = ByteArray(32)
+    get(ba)
+    return AccountId32(ba)
+}

@@ -1,7 +1,9 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
-import acurast.codec.type.acurast.StoredJobAssignment
+import acurast.codec.type.acurast.JobIdentifier
+import acurast.codec.type.acurast.JobRegistration
+import acurast.codec.type.marketplace.JobAssignment
 import acurast.rpc.http.HttpHeader
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.http.KtorHttpClientProvider
@@ -83,21 +85,50 @@ public class RPC public constructor(
     }
 
     /**
+     * Get the registration information of a given job.
+     */
+    public suspend fun getJobRegistration(
+        jobIdentifier: JobIdentifier,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): JobRegistration {
+        val requester = jobIdentifier.requester.toU8a()
+        val script = jobIdentifier.script.toU8a()
+
+        val indexKey =
+            "Acurast".toByteArray().xxH128() + "StoredJobRegistration".toByteArray().xxH128() +
+            requester.blake2b(128) + requester +
+                    script.blake2b(128) + script
+
+        val storage = state.getStorage(
+            storageKey = indexKey,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
+        )
+
+        return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    /**
      * Get all job assignments for a given account.
      */
-    public suspend fun getJobAssignments(
+    public suspend fun getAssignedJobs(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null,
-    ): List<StoredJobAssignment> {
-        val jobs: MutableList<StoredJobAssignment> = mutableListOf()
+    ): List<JobAssignment> {
+        val jobs: MutableList<JobAssignment> = mutableListOf()
 
         val indexKey =
             "AcurastMarketplace".toByteArray().xxH128() +
-            "StoredJobAssignment".toByteArray().xxH128() +
-            accountId.blake2b(128) + accountId;
+                    "StoredMatches".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId;
 
         val keys = state.getKeys(
             indexKey,
@@ -107,17 +138,47 @@ public class RPC public constructor(
             connectionTimeout = connectionTimeout
         )
 
-        for (key in keys) {
-            val result = state.queryStorageAt(
-                storageKey = key.hexToBa(),
+        val result = state.queryStorageAt(
+            storageKeys = keys,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
+        )
+
+        for (change in result[0].changes) {
+            jobs.add(JobAssignment.read(change))
+        }
+
+        return jobs
+    }
+
+    /**
+     * Verify if the account associated to the device is attested.
+     */
+    public suspend fun isAttested(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): Boolean {
+        val key =
+            "Acurast".toByteArray().xxH128() +
+                    "StoredAttestation".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId;
+
+        return try {
+            state.getStorage(
+                storageKey = key,
                 blockHash = blockHash,
                 headers = headers,
                 requestTimeout = requestTimeout,
                 connectionTimeout = connectionTimeout
             )
-            jobs.add(StoredJobAssignment.read(result[0].changes[0]))
+            true
+        } catch (e: Throwable) {
+            false
         }
-
-        return jobs
     }
 }
