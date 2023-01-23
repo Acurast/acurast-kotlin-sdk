@@ -53,7 +53,13 @@ dependencies {
 
     implementation "com.github.Acurast:acurast-kotlin-sdk:$sdkVersion"
 }
-  ```
+```
+
+## Run tests
+
+```sh
+./gradlew test
+```
 
 
 ## Credits
