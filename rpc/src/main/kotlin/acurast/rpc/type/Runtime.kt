@@ -28,13 +28,13 @@ public data class RuntimeMetadataV14(
     }
 }
 
-fun RuntimeMetadataV14.findCall(module: String, call: String) : RuntimeMetadataV14.Call? {
+public fun RuntimeMetadataV14.findCall(module: String, call: String) : RuntimeMetadataV14.Call? {
     return this.modules
         .find { it.name == module }?.calls
         ?.find { it.name == call }
 }
 
-fun ByteBuffer.readMetadata(): RuntimeMetadataV14 {
+public fun ByteBuffer.readMetadata(): RuntimeMetadataV14 {
     val metadata = RuntimeMetadataV14(
         readU32(),
         readByte().toInt()
@@ -52,14 +52,14 @@ fun ByteBuffer.readMetadata(): RuntimeMetadataV14 {
     return metadata
 }
 
-fun ByteBuffer.readMetadataModuleV14(): RuntimeMetadataV14.Module {
+public fun ByteBuffer.readMetadataModuleV14(): RuntimeMetadataV14.Module {
     return RuntimeMetadataV14.Module(
         name = readString(),
         index = readByte().toInt()
     )
 }
 
-fun ByteBuffer.readMetadataTypeV14(): UInt {
+public fun ByteBuffer.readMetadataTypeV14(): UInt {
     // ID (u32)
     val id = readU32()
     // Path (Vec<T::String>) https://docs.rs/scale-info/2.0.0/src/scale_info/ty/path.rs.html#61-64

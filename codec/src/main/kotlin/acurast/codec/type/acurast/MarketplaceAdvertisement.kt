@@ -2,10 +2,7 @@ package acurast.codec.type.acurast
 
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.extensions.toU8a
-import acurast.codec.type.AccountId32
-import acurast.codec.type.ToU8a
-import acurast.codec.type.UInt128
-import acurast.codec.type.UInt64
+import acurast.codec.type.*
 
 /**
  * The structure of a Processor Advertisement in the marketplace.
@@ -18,20 +15,15 @@ public data class MarketplaceAdvertisement(
     public val allowedConsumers: List<AccountId32>? = null,
 ): ToU8a {
     override fun toU8a(): ByteArray {
-        val bytes = pricing.size.toLong().toCompactU8a() +
-                pricing.fold(byteArrayOf()) { acc, item -> acc + item.toU8a() } +
+        val bytes = pricing.toU8a(withSize = true) +
                 maxMemory.toU8a() +
                 networkRequestQuota.toU8a() +
                 storageCapacity.toU8a()
 
         val allowedConsumersBytes = if (allowedConsumers != null) {
-            byteArrayOf(1) /* Means "Some" */ +
-                    allowedConsumers.size.toLong().toCompactU8a() +
-                    allowedConsumers.fold(byteArrayOf()) { acc, account ->
-                        acc + account.toU8a()
-                    }
+            byteArrayOf(1) /* 0x01 Means "Some" */ + allowedConsumers.toU8a(withSize = true)
         } else {
-            // Means "None"
+            // 0x00 Means "None"
             byteArrayOf(0)
         }
 
@@ -43,7 +35,7 @@ public data class MarketplaceAdvertisement(
  * The structure of the pricing accepted by the data processor.
  */
 public data class MarketplacePricing constructor(
-    public val rewardAsset: Int,
+    public val rewardAsset: AssetId,
     public val feePerMillisecond: UInt128,
     public val feePerStorageByte: UInt128,
     public val baseFeePerExecution: UInt128,

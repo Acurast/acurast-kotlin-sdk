@@ -3,6 +3,7 @@ package acurast.codec.type.marketplace
 import acurast.codec.extensions.*
 import acurast.codec.type.*
 import acurast.codec.type.acurast.JobIdentifier
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
 /**
@@ -12,6 +13,7 @@ public data class JobAssignment(
     public val processor: AccountId32,
     public val jobId: JobIdentifier,
     public val slot: Int,
+    public val startDelay: BigInteger,
     public val feePerExecution: MultiAssetV1,
     public val acknowledged: Boolean,
     public val sla: SLA
@@ -31,6 +33,7 @@ public data class JobAssignment(
                 processor,
                 jobId = JobIdentifier(requester, script),
                 slot = value.readCompactInteger(),
+                startDelay = value.long.toBigInteger(),
                 feePerExecution = MultiAssetV1.read(value),
                 acknowledged = value.readBoolean(),
                 sla = SLA.read(value)

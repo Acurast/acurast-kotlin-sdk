@@ -3,6 +3,7 @@ package acurast.rpc
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
 import acurast.codec.type.AccountId32
+import acurast.codec.type.Fungibility
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.pallet.JSONRequest
@@ -18,6 +19,7 @@ import org.json.JSONArray
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertTrue
 import java.math.BigInteger
 import kotlin.test.assertEquals
 
@@ -37,6 +39,31 @@ class RpcTest {
     @After
     fun clean() {
         unmockkAll()
+    }
+
+    @Test
+    fun `Verify if a given account is attested`() {
+        val account = "0x58aee56e2857bde581bb6fe383de7fb7fac7e6c13ab54952b9d1bfec9af7ee00"
+        val param = JSONArray().put("d8f45172ad1e7575680eaa8157102800f75db0c33624f81fd193acdc07620654f9f1bd810967c8bb5367f6626d3c7c0c58aee56e2857bde581bb6fe383de7fb7fac7e6c13ab54952b9d1bfec9af7ee00")
+        val body = JSONRequest("state_getStorage", param).toString()
+
+        val jsonResponse = """                	
+            {
+                "jsonrpc": "2.0",
+                "result": "0x08d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
+                "id": 1
+            }
+        """.trimIndent()
+
+        coEvery { httpClient.post(any(), any(), any(), any()) } returns jsonResponse
+
+        val response = runBlocking {
+            rpc.isAttested(account.hexToBa())
+        }
+
+        assertTrue(response)
+
+        coVerify { httpClient.post(rpcURL, body = body ) }
     }
 
     @Test
@@ -138,12 +165,12 @@ class RpcTest {
                         "block": "0x40a35a0027b2dae57f8543212c55bae2cbf43a389fac70b304db73dc6f497b87",
                         "changes": [
                             [
-                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7323a05cabf6d3bde7ca3ef0d11596b5611cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c01b46a2d8f13769f25fd01fb196526e11cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07cd4697066733a2f2f516d644a4e764d4c66766a7a4a6e48514a6d73454243384b554431667954757346726b5841463559615a6f755432",
-                                "0x0000010300a10f0432055800a68601000100000000000000000000000000000000"
+                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d734a803acc398e9201cfa3e321aa42c21fc213b320e36dae97c125f9f459d32c8d34c356e8294ec3b01cec015cc1b37ca4ee7fbc6e211d0b9d5197bfe177d80c251cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07cd4697066733a2f2f516d5151656a454856664d4e743774574b716b54614b705533697453425235646e425833476e46487242356f3676",
+                                "0x00000000000000000000010300a10f0432055800a68601000114000000000000000000000000000000"
                             ],
                             [
-                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7323a05cabf6d3bde7ca3ef0d11596b5611cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c5bf26ec45ab90e8f1b701097ccad556dd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27dd4697066733a2f2f516d644a4e764d4c66766a7a4a6e48514a6d73454243384b554431667954757346726b5841463559615a6f755432",
-                                "0x0000010300a10f0432055800a68601000100000000000000000000000000000000"
+                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d734a803acc398e9201cfa3e321aa42c21fc213b320e36dae97c125f9f459d32c8d34c356e8294ec3b01cec015cc1b37ca4ee7fbc6e211d0b9d5197bfe177d80c251cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07cd4697066733a2f2f516d5151656a454856664d4e743774574b716b54614b705533697453425235646e425833476e46487242356f3676",
+                                "0x00000000000000000000010300a10f0432055800a68601000114000000000000000000000000000000"
                             ]
                         ]
                     }
@@ -159,6 +186,11 @@ class RpcTest {
         }
 
         assertEquals(2, response.size)
+        assertEquals(0, response[0].slot)
+        assertEquals(BigInteger.ZERO, response[0].startDelay)
+        assertEquals(Fungibility.Kind.Fungible, response[0].feePerExecution.fungibility.kind)
+        assertEquals(BigInteger.valueOf(25_001), response[0].feePerExecution.fungibility.amount)
+        assertTrue(response[0].acknowledged)
     }
 
     @Test
@@ -169,7 +201,6 @@ class RpcTest {
         val param = JSONArray().put("d8f45172ad1e7575680eaa8157102800f86e394d601279aa535d660453ff8e0923a05cabf6d3bde7ca3ef0d11596b5611cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c0d96d7be55af90364f35d6fd733387fbd4697066733a2f2f516d644a4e764d4c66766a7a4a6e48514a6d73454243384b554431667954757346726b5841463559615a6f755432")
         val body = JSONRequest("state_getStorage", param).toString()
 
-        System.out.println(body.toString())
         val jsonResponse = """                	
             {
                 "jsonrpc": "2.0",
