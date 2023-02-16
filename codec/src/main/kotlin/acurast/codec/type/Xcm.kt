@@ -20,11 +20,11 @@ public data class AssetId(public val kind: Kind): ToU8a {
     /**
      * XCM asset ID kinds.
      */
-    public enum class Kind(public val id: Int): ToU8a {
+    public enum class Kind(public val id: Byte): ToU8a {
         Concrete(0),
         Abstract(1);
 
-        override fun toU8a(): ByteArray = id.toByte().toU8a()
+        override fun toU8a(): ByteArray = id.toU8a()
     }
 
     override fun toU8a(): ByteArray {
@@ -33,7 +33,7 @@ public data class AssetId(public val kind: Kind): ToU8a {
 
     public companion object {
         public fun read(buffer: ByteBuffer): AssetId {
-            return when (buffer.readByte().toInt()) {
+            return when (buffer.readByte()) {
                 Kind.Concrete.id -> AssetId(MultiLocation.read(buffer))
                 Kind.Abstract.id -> AssetId(buffer.readByteArray())
                 else -> throw UnsupportedEncodingException()
@@ -66,7 +66,7 @@ public data class JunctionV1(public val kind: Kind): ToU8a {
     /**
      * Junction kinds.
      */
-    public enum class Kind(public val id: Int): ToU8a {
+    public enum class Kind(public val id: Byte): ToU8a {
         Parachain(0),
         AccountId32(1),
         AccountIndex64(2),
@@ -78,7 +78,7 @@ public data class JunctionV1(public val kind: Kind): ToU8a {
         Plurality(8);
 
         override fun toU8a(): ByteArray {
-            return id.toByte().toU8a()
+            return id.toU8a()
         }
     }
 
@@ -93,7 +93,7 @@ public data class JunctionV1(public val kind: Kind): ToU8a {
 
     public companion object {
         public fun read(buffer: ByteBuffer): JunctionV1 {
-            return when (val kind = buffer.readByte().toInt()) {
+            return when (val kind = buffer.readByte()) {
                 Kind.Parachain.id -> JunctionV1(Kind.Parachain)
                     .setParachain(buffer.readCompactInteger())
                 Kind.AccountId32.id -> JunctionV1(Kind.AccountId32) // TODO
@@ -165,7 +165,7 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
     /**
      * Junctions kinds.
      */
-    public enum class Kind(public val id: Int): ToU8a {
+    public enum class Kind(public val id: Byte): ToU8a {
         Here(0),
         X1(1),
         X2(2),
@@ -177,7 +177,7 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
         X8(8);
 
         override fun toU8a(): ByteArray {
-            return id.toByte().toU8a()
+            return id.toU8a()
         }
     }
 
@@ -187,7 +187,7 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
 
     public companion object {
         public fun read(buffer: ByteBuffer): JunctionsV1 {
-            return when (buffer.readByte().toInt()) {
+            return when (buffer.readByte()) {
                 Kind.Here.id -> JunctionsV1(Kind.Here, listOf())
                 Kind.X1.id -> JunctionsV1(Kind.X1, listOf(JunctionV1.read(buffer)))
                 Kind.X2.id -> JunctionsV1(Kind.X2, listOf(JunctionV1.read(buffer), JunctionV1.read(buffer)))

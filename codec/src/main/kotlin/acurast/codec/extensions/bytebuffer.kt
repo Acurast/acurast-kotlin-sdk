@@ -21,7 +21,6 @@ public fun ByteBuffer.readU128(): BigInteger = littleEndian {
     BigInteger(arr.reversedArray())
 }
 
-@ExperimentalUnsignedTypes
 public fun ByteBuffer.readByte(): Byte = littleEndian {
     get()
 }
