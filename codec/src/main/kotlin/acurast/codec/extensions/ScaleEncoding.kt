@@ -1,7 +1,6 @@
 package acurast.codec.extensions
 
 import acurast.codec.type.ToU8a
-import java.nio.ByteBuffer
 
 public fun <T : ToU8a> List<T>.toU8a(withSize: Boolean = true): ByteArray {
     val size = if (withSize) this.size.toLong().toCompactU8a() else byteArrayOf()

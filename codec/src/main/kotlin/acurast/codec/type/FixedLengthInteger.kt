@@ -9,7 +9,7 @@ public data class UInt128(val x: BigInteger): ToU8a {
     override fun toU8a(): ByteArray {
         val ret = ByteBuffer.allocate(16)
         ret.order(ByteOrder.LITTLE_ENDIAN)
-        ret.put(x.toByteArray())
+        ret.put(x.toByteArray().reversedArray())
 
         return ret.array()
     }

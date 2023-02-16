@@ -1,6 +1,5 @@
 package acurast.codec.type.acurast
 
-import acurast.codec.extensions.toCompactU8a
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.*
 
@@ -12,22 +11,15 @@ public data class MarketplaceAdvertisement(
     public val maxMemory: Int,
     public val networkRequestQuota: Byte,
     public val storageCapacity: Int,
-    public val allowedConsumers: List<AccountId32>? = null,
+    public val allowedConsumers: Option<List<AccountId32>>,
 ): ToU8a {
     override fun toU8a(): ByteArray {
-        val bytes = pricing.toU8a(withSize = true) +
+        return pricing.toU8a(withSize = true) +
                 maxMemory.toU8a() +
                 networkRequestQuota.toU8a() +
-                storageCapacity.toU8a()
+                storageCapacity.toU8a() +
+                allowedConsumers.toU8a()
 
-        val allowedConsumersBytes = if (allowedConsumers != null) {
-            byteArrayOf(1) /* 0x01 Means "Some" */ + allowedConsumers.toU8a(withSize = true)
-        } else {
-            // 0x00 Means "None"
-            byteArrayOf(0)
-        }
-
-        return bytes + allowedConsumersBytes
     }
 }
 
