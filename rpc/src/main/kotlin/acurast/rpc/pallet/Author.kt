@@ -27,6 +27,11 @@ public class Author(http_client: IHttpClientProvider, rpc_url: String) : PalletR
         )
 
         val json = JSONObject(response)
-        return json.optString("result") ?: throw handleError(json)
+
+        if (json.has("error")) {
+            throw handleError(json)
+        }
+
+        return json.optString("result")
     }
 }

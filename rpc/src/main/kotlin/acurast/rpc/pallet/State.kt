@@ -43,12 +43,12 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         )
 
         val json = JSONObject(response)
-        val result = json.optString("result")
-        if (result == "null" || result.isEmpty()) {
+
+        if (json.has("error")) {
             throw handleError(json)
-        } else {
-            return result
         }
+
+        return  json.optString("result")
     }
 
     /**

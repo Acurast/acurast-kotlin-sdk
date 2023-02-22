@@ -52,6 +52,10 @@ public class RPC public constructor(
             connectionTimeout
         )
 
+        if (storage == "null" || storage.isEmpty()) {
+            return FrameSystemAccountInfo()
+        }
+
         return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
     }
 
@@ -169,14 +173,15 @@ public class RPC public constructor(
                     accountId.blake2b(128) + accountId;
 
         return try {
-            state.getStorage(
+            val result = state.getStorage(
                 storageKey = key,
                 blockHash = blockHash,
                 headers = headers,
                 requestTimeout = requestTimeout,
                 connectionTimeout = connectionTimeout
             )
-            true
+
+            result != "null" && result.isNotEmpty()
         } catch (e: Throwable) {
             false
         }
