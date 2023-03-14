@@ -16,9 +16,7 @@ import acurast.codec.type.marketplace.ExecutionResult
 public data class AcknowledgeMatchCall(val callIndex: ByteArray, val jobId: JobIdentifier):
     ExtrinsicCall {
     override fun toU8a(): ByteArray {
-        return callIndex +
-                jobId.requester.toU8a() +
-                jobId.script.size.toLong().toCompactU8a() + jobId.script
+        return callIndex + jobId.toU8a()
     }
 }
 
@@ -52,8 +50,7 @@ public data class ReportCall(
 ): ExtrinsicCall {
     override fun toU8a(): ByteArray {
         return callIndex +
-                jobId.requester.toU8a() +
-                jobId.script.size.toLong().toCompactU8a() + jobId.script +
+                jobId.toU8a() +
                 last.toU8a() +
                 executionResult.toU8a()
     }

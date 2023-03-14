@@ -24,14 +24,13 @@ public data class JobAssignment(
             key.skip(48); // Skip <pallet_name>, <method_name>, <processor_hash>
             val processor = key.readAccountId32()
             key.skip(16); // Skip <requester_hash>
-            val requester = key.readAccountId32()
-            val script = key.readByteArray()
+            val jobId = JobIdentifier.read(key)
 
             val value = ByteBuffer.wrap(l[1].hexToBa())
 
             return JobAssignment(
                 processor,
-                jobId = JobIdentifier(requester, script),
+                jobId = jobId,
                 slot = value.readCompactInteger(),
                 startDelay = value.long.toBigInteger(),
                 feePerExecution = MultiAssetV1.read(value),

@@ -98,13 +98,13 @@ public class RPC public constructor(
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null,
     ): JobRegistration {
-        val requester = jobIdentifier.requester.toU8a()
-        val script = jobIdentifier.script.toU8a()
+        val origin = jobIdentifier.origin.toU8a()
+        val jobId = jobIdentifier.id.toU8a()
 
         val indexKey =
             "Acurast".toByteArray().xxH128() + "StoredJobRegistration".toByteArray().xxH128() +
-            requester.blake2b(128) + requester +
-                    script.blake2b(128) + script
+                    origin.blake2b(128) + origin +
+                    jobId.blake2b(128) + jobId
 
         val storage = state.getStorage(
             storageKey = indexKey,
