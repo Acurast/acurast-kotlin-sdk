@@ -11,16 +11,29 @@ public data class MarketplaceAdvertisement(
     public val maxMemory: Int,
     public val networkRequestQuota: Byte,
     public val storageCapacity: Int,
-    public val allowedConsumers: Option<List<AccountId32>>,
+    public val allowedConsumers: Option<List<MultiOrigin>>,
+    public val availableModules: List<JobModule> = emptyList(),
 ): ToU8a {
     override fun toU8a(): ByteArray {
         return pricing.toU8a(withSize = true) +
                 maxMemory.toU8a() +
                 networkRequestQuota.toU8a() +
                 storageCapacity.toU8a() +
-                allowedConsumers.toU8a()
+                allowedConsumers.toU8a() +
+                availableModules.toU8a(withSize = true)
 
     }
+}
+
+/**
+ * A module feature optionally supported by processors.
+ */
+public enum class JobModule: ToU8a {
+    DataEncryption
+    /// !!! IMPORTANT: New values should be added here !!!
+    ;
+
+    override fun toU8a(): ByteArray = this.ordinal.toByte().toU8a()
 }
 
 /**

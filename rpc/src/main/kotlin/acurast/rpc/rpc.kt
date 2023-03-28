@@ -158,7 +158,7 @@ public class RPC public constructor(
     }
 
     /**
-     * Verify if the account associated to the device is attested.
+     * Verify if the account is associated with an attested device.
      */
     public suspend fun isAttested(
         accountId: ByteArray,
@@ -170,7 +170,7 @@ public class RPC public constructor(
         val key =
             "Acurast".toByteArray().xxH128() +
                     "StoredAttestation".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         return try {
             val result = state.getStorage(

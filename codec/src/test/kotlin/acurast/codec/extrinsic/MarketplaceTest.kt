@@ -49,10 +49,11 @@ class MarketplaceTest {
             maxMemory = 1,
             networkRequestQuota = 2,
             storageCapacity = 3,
-            allowedConsumers = Option.some(listOf(AccountId32("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())))
+            allowedConsumers = Option.some(listOf(MultiOrigin.Acurast(AccountId32("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())))),
+            availableModules = listOf(JobModule.DataEncryption)
         )
         val call = AdvertiseCall(byteArrayOf(0x2b, 0x00), advertisement)
-        val expected = "2b000400010300a10f043205580100000000000000000000000000000001000000000000000000000000000000010000000000000000000000000000000010270000000000000100000002030000000104d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+        val expected = "2b000400010300a10f04320558010000000000000000000000000000000100000000000000000000000000000001000000000000000000000000000000001027000000000000010000000203000000010400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0400"
         Assert.assertEquals(expected, call.toU8a().toHex())
     }
 
