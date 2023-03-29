@@ -18,10 +18,12 @@ public data class JobRegistration(
     public val schedule: JobSchedule,
     // Maximum memory bytes used during a single execution of the job.
     public val memory: Int,
-    // Maximum network request used during a single execution of the job.
+    // The modules required for the job.
     public val networkRequests: Int,
     // Maximum storage bytes used during the whole period of the job's executions.
     public val storage: Int,
+    //
+    public val requiredModules: List<JobModule>,
     // Extra parameters.
     public val extra: ByteArray
 ) {
@@ -34,6 +36,7 @@ public data class JobRegistration(
             val memory = value.int
             val networkRequests = value.int
             val storage = value.int
+            val requiredModules = value.readList { JobModule.read(this) }
             val extra = byteArrayOf() // TODO
 
             return JobRegistration(
@@ -44,6 +47,7 @@ public data class JobRegistration(
                 memory,
                 networkRequests,
                 storage,
+                requiredModules,
                 extra
             )
         }

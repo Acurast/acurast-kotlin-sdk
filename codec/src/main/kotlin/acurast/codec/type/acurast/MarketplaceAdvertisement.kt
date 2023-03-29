@@ -1,7 +1,12 @@
 package acurast.codec.type.acurast
 
+import acurast.codec.extensions.readByte
+import acurast.codec.extensions.readCompactInteger
+import acurast.codec.extensions.readCompactU128
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.*
+import java.io.UnsupportedEncodingException
+import java.nio.ByteBuffer
 
 /**
  * The structure of a Processor Advertisement in the marketplace.
@@ -28,12 +33,20 @@ public data class MarketplaceAdvertisement(
 /**
  * A module feature optionally supported by processors.
  */
-public enum class JobModule: ToU8a {
-    DataEncryption
-    /// !!! IMPORTANT: New values should be added here !!!
+public enum class JobModule(public val id: Byte): ToU8a {
+    DataEncryption(0)
     ;
 
-    override fun toU8a(): ByteArray = this.ordinal.toByte().toU8a()
+    override fun toU8a(): ByteArray = this.id.toU8a()
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): JobModule {
+            return when (val id = buffer.readByte()) {
+                DataEncryption.id -> DataEncryption
+                else -> throw UnsupportedEncodingException("Unknown JobModule $id.")
+            }
+        }
+    }
 }
 
 /**
