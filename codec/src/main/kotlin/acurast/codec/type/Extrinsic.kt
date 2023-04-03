@@ -12,6 +12,10 @@ public interface ToU8a {
     public fun toU8a(): ByteArray;
 }
 
+public interface ToCompactU8a {
+    public fun toCompactU8a(): ByteArray;
+}
+
 /**
  * An extrinsic method call.
  */
