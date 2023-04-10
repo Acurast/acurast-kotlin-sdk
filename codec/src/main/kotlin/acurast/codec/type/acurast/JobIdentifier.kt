@@ -2,7 +2,6 @@ package acurast.codec.type.acurast
 
 import acurast.codec.extensions.*
 import acurast.codec.type.AccountId32
-import acurast.codec.type.JunctionV1
 import acurast.codec.type.ToU8a
 import acurast.codec.type.readAccountId32
 import java.io.UnsupportedEncodingException
@@ -28,17 +27,23 @@ public data class MultiOrigin(
             }
         }
     }
-
     public enum class Kind(public val id: Byte): ToU8a {
         Acurast(0),
         Tezos(1);
 
         public override fun toU8a(): ByteArray = id.toU8a()
+
+        public override fun toString(): String = when (this) {
+            Acurast -> "Acurast"
+            Tezos -> "Tezos"
+        }
     }
 
     public override fun toU8a(): ByteArray {
         return kind.toU8a() + source
     }
+
+    public override fun toString(): String = "(kind: ${kind}, source: ${source.toHex()})"
 }
 
 /**
@@ -58,4 +63,6 @@ public data class JobIdentifier(
     }
 
     public override fun toU8a(): ByteArray = origin.toU8a() + id.toU8a()
+
+    public override fun toString(): String = "(origin: ${origin}, id: ${id.toString(10)})"
 }
