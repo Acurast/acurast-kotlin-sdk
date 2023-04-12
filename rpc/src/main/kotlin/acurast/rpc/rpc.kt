@@ -150,8 +150,10 @@ public class RPC public constructor(
             connectionTimeout = connectionTimeout
         )
 
-        for (change in result[0].changes) {
-            jobs.add(JobAssignment.read(change))
+        if (result.isNotEmpty()) {
+            for (change in result[0].changes) {
+                jobs.add(JobAssignment.read(change))
+            }
         }
 
         return jobs
