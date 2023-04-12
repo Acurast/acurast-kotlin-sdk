@@ -12,13 +12,10 @@ class XcmTest {
     fun encodeMultiLocation() {
         val location = MultiLocation(
             parents = 1,
-            interior = JunctionsV1(
-                kind = JunctionsV1.Kind.X3,
-                junctions = listOf(
-                    JunctionV1(JunctionV1.Kind.Parachain).setParachain(1000),
-                    JunctionV1(JunctionV1.Kind.PalletInstance).setPalletInstance(50),
-                    JunctionV1(JunctionV1.Kind.GeneralIndex).setGeneralIndex(BigInteger.valueOf(22)),
-                )
+            interior = JunctionsV1.X3(
+                JunctionV1.Parachain(1000),
+                JunctionV1.PalletInstance(50),
+                JunctionV1.GeneralIndex(BigInteger.valueOf(22)),
             )
         )
 
@@ -33,13 +30,10 @@ class XcmTest {
     fun encodeAssetId() {
         val assetId = AssetId(MultiLocation(
             parents = 1,
-            interior = JunctionsV1(
-                kind = JunctionsV1.Kind.X3,
-                junctions = listOf(
-                    JunctionV1(JunctionV1.Kind.Parachain).setParachain(1000),
-                    JunctionV1(JunctionV1.Kind.PalletInstance).setPalletInstance(50),
-                    JunctionV1(JunctionV1.Kind.GeneralIndex).setGeneralIndex(BigInteger.valueOf(22)),
-                )
+            interior = JunctionsV1.X3(
+                JunctionV1.Parachain(1000),
+                JunctionV1.PalletInstance(50),
+                JunctionV1.GeneralIndex(BigInteger.valueOf(22)),
             )
         ))
 

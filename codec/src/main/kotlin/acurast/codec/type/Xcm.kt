@@ -57,16 +57,8 @@ public data class AssetId(public val kind: Kind): ToU8a {
     }
 }
 
-public data class JunctionV1(public val kind: Kind): ToU8a {
-    private var parachain: Int? = null
-    private var palletInstance: Int? = null
-    private var generalIndex: BigInteger? = null
-    private var generalKey: List<Int> = emptyList()
-
-    /**
-     * Junction kinds.
-     */
-    public enum class Kind(public val id: Byte): ToU8a {
+public sealed interface JunctionV1: ToU8a {
+    public enum class Tag(public val id: Byte) : ToU8a {
         Parachain(0),
         AccountId32(1),
         AccountIndex64(2),
@@ -77,95 +69,125 @@ public data class JunctionV1(public val kind: Kind): ToU8a {
         OnlyChild(7),
         Plurality(8);
 
-        override fun toU8a(): ByteArray {
-            return id.toU8a()
+        override fun toU8a(): ByteArray = id.toU8a()
+    }
+
+    public sealed interface Kind {
+        public val tag: Tag
+
+        public companion object {
+            internal val values: List<Kind>
+                get() = listOf(
+                    Parachain,
+                    AccountId32,
+                    AccountIndex64,
+                    AccountKey20,
+                    PalletInstance,
+                    GeneralIndex,
+                    GeneralKey,
+                    OnlyChild,
+                    Plurality
+                )
         }
     }
 
-    override fun toU8a(): ByteArray {
-        return kind.toU8a() + when (kind) {
-            Kind.Parachain -> getParachain().toLong().toCompactU8a()
-            Kind.PalletInstance -> getPalletInstance().toByte().toU8a()
-            Kind.GeneralIndex -> getGeneralIndex().toCompactU8a()
-            else -> throw UnsupportedEncodingException()
-        }
-    }
-
-    public companion object {
+    public object Decoder {
         public fun read(buffer: ByteBuffer): JunctionV1 {
             return when (val kind = buffer.readByte()) {
-                Kind.Parachain.id -> JunctionV1(Kind.Parachain)
-                    .setParachain(buffer.readCompactInteger())
-                Kind.AccountId32.id -> JunctionV1(Kind.AccountId32) // TODO
-                Kind.AccountIndex64.id -> JunctionV1(Kind.AccountIndex64) // TODO
-                Kind.AccountKey20.id -> JunctionV1(Kind.AccountKey20) // TODO
-                Kind.PalletInstance.id -> JunctionV1(Kind.PalletInstance)
-                    .setPalletInstance(buffer.readByte().toInt())
-                Kind.GeneralIndex.id -> JunctionV1(Kind.GeneralIndex)
-                    .setGeneralIndex(buffer.readCompactU128())
-                Kind.GeneralKey.id -> JunctionV1(Kind.GeneralKey)
-                    .setGeneralKey(TODO())
-                Kind.OnlyChild.id -> JunctionV1(Kind.OnlyChild)
-                Kind.Plurality.id -> JunctionV1(Kind.Plurality) // TODO
-                else -> throw UnsupportedEncodingException("Unknown JunctionV1 kind $kind.")
+                Tag.Parachain.id -> Parachain(buffer.readCompactInteger().toLong())
+                Tag.AccountId32.id -> AccountId32(buffer.readByteArray()) // TODO
+                Tag.AccountIndex64.id -> AccountIndex64() // TODO
+                Tag.AccountKey20.id -> AccountKey20() // TODO
+                Tag.PalletInstance.id -> PalletInstance(buffer.readByte())
+                Tag.GeneralIndex.id -> GeneralIndex(buffer.readCompactU128())
+                Tag.GeneralKey.id -> GeneralKey() // TODO
+                Tag.OnlyChild.id -> OnlyChild() // TODO
+                Tag.Plurality.id -> Plurality() // TODO
+                else -> throw UnsupportedEncodingException("Unknown Junction kind: $kind.")
             }
         }
     }
 
-    public fun getParachain() : Int {
-        if (kind != Kind.Parachain) {
-            throw NoSuchFieldException("Junction is not of kind: Parachain")
+    public data class Parachain(val parachainId: Long) : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Parachain
         }
-        return parachain!!
+
+        override fun toU8a(): ByteArray = tag.toU8a() + parachainId.toCompactU8a()
     }
 
-    public fun setParachain(parachain: Int) : JunctionV1 {
-        this.parachain = parachain
-        return this
-    }
-
-    public fun getPalletInstance() : Int {
-        if (kind != Kind.PalletInstance) {
-            throw NoSuchFieldException("Junction is not of kind: PalletInstance")
+    public data class AccountId32(val accountId32: ByteArray) : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.AccountId32
         }
-        return palletInstance!!
+
+        override fun toU8a(): ByteArray = tag.toU8a() + accountId32.toU8a()
     }
 
-    public fun setPalletInstance(palletInstance: Int) : JunctionV1 {
-        this.palletInstance = palletInstance
-        return this
-    }
-
-    public fun getGeneralIndex() : BigInteger {
-        if (kind != Kind.GeneralIndex) {
-            throw NoSuchFieldException("Junction is not of kind: GeneralIndex")
+    // TODO
+    public class AccountIndex64() : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.AccountIndex64
         }
-        return generalIndex!!
+
+        override fun toU8a(): ByteArray = tag.toU8a()
     }
 
-    public fun setGeneralIndex(generalIndex: BigInteger) : JunctionV1 {
-        this.generalIndex = generalIndex
-        return this
-    }
-
-    public fun getGeneralKey() : List<Int> {
-        if (kind != Kind.GeneralKey) {
-            throw NoSuchFieldException("Junction is not of kind: GeneralKey")
+    // TODO
+    public class AccountKey20() : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.AccountKey20
         }
-        return generalKey
+
+        override fun toU8a(): ByteArray = tag.toU8a()
     }
 
-    public fun setGeneralKey(generalKey: List<Int>) : JunctionV1 {
-        this.generalKey = generalKey
-        return this
+    public data class PalletInstance(val palletInstance: Byte) : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.PalletInstance
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + palletInstance.toU8a()
+    }
+
+    public data class GeneralIndex(val generalIndex: BigInteger) : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.GeneralIndex
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + generalIndex.toCompactU8a()
+    }
+
+    // TODO
+    public class GeneralKey() : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.GeneralKey
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a()
+    }
+
+    // TODO
+    public class OnlyChild() : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.OnlyChild
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a()
+    }
+
+    // TODO
+    public class Plurality() : JunctionV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Plurality
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a()
     }
 }
 
-public data class JunctionsV1(public val kind: Kind, public val junctions: List<JunctionV1>): ToU8a {
-    /**
-     * Junctions kinds.
-     */
-    public enum class Kind(public val id: Byte): ToU8a {
+public sealed interface JunctionsV1: ToU8a {
+    public enum class Tag(public val id: Byte): ToU8a {
         Here(0),
         X1(1),
         X2(2),
@@ -176,87 +198,247 @@ public data class JunctionsV1(public val kind: Kind, public val junctions: List<
         X7(7),
         X8(8);
 
-        override fun toU8a(): ByteArray {
-            return id.toU8a()
+        override fun toU8a(): ByteArray = id.toU8a()
+    }
+
+    public sealed interface Kind {
+        public val tag: Tag
+
+        public companion object {
+            internal val values: List<Kind>
+                get() = listOf(
+                    Here,
+                    X1,
+                    X2,
+                    X3,
+                    X4,
+                    X5,
+                    X6,
+                    X7,
+                    X8,
+                )
         }
     }
 
-    override fun toU8a(): ByteArray {
-        return kind.toU8a() + junctions.toU8a(withSize = false)
-    }
-
-    public companion object {
+    public object Decoder {
         public fun read(buffer: ByteBuffer): JunctionsV1 {
-            return when (buffer.readByte()) {
-                Kind.Here.id -> JunctionsV1(Kind.Here, listOf())
-                Kind.X1.id -> JunctionsV1(Kind.X1, listOf(JunctionV1.read(buffer)))
-                Kind.X2.id -> JunctionsV1(Kind.X2, listOf(JunctionV1.read(buffer), JunctionV1.read(buffer)))
-                Kind.X3.id -> JunctionsV1(
-                    Kind.X3,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+            return when (val tag = buffer.readByte()) {
+                Tag.Here.id -> Here()
+                Tag.X1.id -> X1(JunctionV1.Decoder.read(buffer))
+                Tag.X2.id -> X2(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                Kind.X4.id -> JunctionsV1(
-                    Kind.X4,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+                Tag.X3.id -> X3(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                Kind.X5.id -> JunctionsV1(
-                    Kind.X5,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+                Tag.X4.id -> X4(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                Kind.X6.id -> JunctionsV1(
-                    Kind.X6,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+                Tag.X5.id -> X5(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                Kind.X7.id -> JunctionsV1(
-                    Kind.X7,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+                Tag.X6.id -> X6(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                Kind.X8.id -> JunctionsV1(
-                    Kind.X8,
-                    listOf(
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer),
-                        JunctionV1.read(buffer)
-                    )
+                Tag.X7.id -> X7(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
                 )
-                else -> throw UnsupportedEncodingException()
+                Tag.X8.id -> X8(
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                    JunctionV1.Decoder.read(buffer),
+                )
+                else -> throw UnsupportedEncodingException("Unknown junctions tag: $tag")
             }
         }
+    }
+
+    public class Here : JunctionsV1 {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Here
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a()
+    }
+
+    public data class X1(val junction1: JunctionV1) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(junction1)
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X1
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X2(val junction1: JunctionV1, val junction2: JunctionV1) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(junction1, junction2)
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X2
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X3(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(junction1, junction2, junction3)
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X3
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X4(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1,
+        val junction4: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(
+            junction1,
+            junction2,
+            junction3,
+            junction4
+        )
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X4
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X5(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1,
+        val junction4: JunctionV1,
+        val junction5: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(
+            junction1,
+            junction2,
+            junction3,
+            junction4,
+            junction5
+        )
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X5
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X6(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1,
+        val junction4: JunctionV1,
+        val junction5: JunctionV1,
+        val junction6: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(
+            junction1,
+            junction2,
+            junction3,
+            junction4,
+            junction5,
+            junction6
+        )
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X6
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X7(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1,
+        val junction4: JunctionV1,
+        val junction5: JunctionV1,
+        val junction6: JunctionV1,
+        val junction7: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(
+            junction1,
+            junction2,
+            junction3,
+            junction4,
+            junction5,
+            junction6,
+            junction7
+        )
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X7
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
+    }
+
+    public data class X8(
+        val junction1: JunctionV1,
+        val junction2: JunctionV1,
+        val junction3: JunctionV1,
+        val junction4: JunctionV1,
+        val junction5: JunctionV1,
+        val junction6: JunctionV1,
+        val junction7: JunctionV1,
+        val junction8: JunctionV1
+    ) : JunctionsV1 {
+        private val junctions: List<JunctionV1> = listOf(
+            junction1,
+            junction2,
+            junction3,
+            junction4,
+            junction5,
+            junction6,
+            junction7,
+            junction8
+        )
+
+        public companion object : Kind {
+            override val tag: Tag = Tag.X8
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + junctions.toU8a(withSize = false)
     }
 }
 
@@ -268,7 +450,7 @@ public data class MultiLocation(
         public fun read(buffer: ByteBuffer): MultiLocation {
             return MultiLocation(
                 parents = buffer.readByte().toInt(),
-                interior = JunctionsV1.read(buffer)
+                interior = JunctionsV1.Decoder.read(buffer)
             )
         }
     }
