@@ -65,8 +65,8 @@ class MarketplaceTest {
             BigInteger.ONE
         )
         val executionResult = ExecutionResult.success("""{ "some_field": 1 }""".encodeToByteArray())
-        val call = ReportCall(callIndex, jobId, false, executionResult)
-        val expected = "2b04008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a480100000000000000000000000000000000004c7b2022736f6d655f6669656c64223a2031207d"
+        val call = ReportCall(callIndex, jobId, executionResult)
+        val expected = "2b04008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4801000000000000000000000000000000004c7b2022736f6d655f6669656c64223a2031207d"
         Assert.assertEquals(expected, call.toU8a().toHex())
     }
 }

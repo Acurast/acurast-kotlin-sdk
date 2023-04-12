@@ -1,6 +1,5 @@
 package acurast.codec.extrinsic
 
-import acurast.codec.extensions.toU8a
 import acurast.codec.type.ExtrinsicCall
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MarketplaceAdvertisement
@@ -44,13 +43,11 @@ public data class AdvertiseCall(
 public data class ReportCall(
     val callIndex: ByteArray,
     val jobId: JobIdentifier,
-    val last: Boolean,
     val executionResult: ExecutionResult
 ): ExtrinsicCall {
     override fun toU8a(): ByteArray {
         return callIndex +
                 jobId.toU8a() +
-                last.toU8a() +
                 executionResult.toU8a()
     }
 }

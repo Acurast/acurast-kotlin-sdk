@@ -7,7 +7,7 @@ import java.nio.charset.Charset
 
 public class ScaleDecoderException(msg: String?) : Exception(msg)
 
-inline fun <reified T> ByteBuffer.littleEndian(decoder: ByteBuffer.() -> T): T {
+public inline fun <reified T> ByteBuffer.littleEndian(decoder: ByteBuffer.() -> T): T {
     order(ByteOrder.LITTLE_ENDIAN)
     return decoder()
 }
@@ -67,7 +67,7 @@ public fun ByteBuffer.readByteArray(): ByteArray = littleEndian {
     ba
 }
 
-fun ByteBuffer.readOptionalBoolean(): Boolean? = littleEndian {
+public fun ByteBuffer.readOptionalBoolean(): Boolean? = littleEndian {
     when (this.get() == 0x00.toByte()) {
         true -> null
         else -> this.get() == 0x02.toByte()
