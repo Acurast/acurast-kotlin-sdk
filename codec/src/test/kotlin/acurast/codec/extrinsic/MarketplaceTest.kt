@@ -17,8 +17,9 @@ class MarketplaceTest {
             MultiOrigin.Acurast(AccountId32("8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48".hexToBa())),
             BigInteger.ONE
         )
-        val call = AcknowledgeMatchCall(callIndex, jobId)
-        Assert.assertEquals("2b03008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4801000000000000000000000000000000", call.toU8a().toHex())
+        val secp256r1Pk = PublicKey.Secp256r1("0x032221f88ab3843cdf8ee8f0a410237b712278b99f9982504644a0018d94c179c5".hexToBa())
+        val call = AcknowledgeMatchCall(callIndex, jobId, listOf(secp256r1Pk))
+        Assert.assertEquals("2b03008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4801000000000000000000000000000000040084032221f88ab3843cdf8ee8f0a410237b712278b99f9982504644a0018d94c179c5", call.toU8a().toHex())
     }
 
     @Test

@@ -17,7 +17,7 @@ public data class MultiOrigin(
 ): ToU8a {
     public companion object {
         public fun Acurast(address: AccountId32): MultiOrigin = MultiOrigin(Kind.Acurast, address.toU8a())
-        public fun Tezos(payload: ByteArray): MultiOrigin = MultiOrigin(Kind.Tezos, payload)
+        public fun Tezos(payload: ByteArray): MultiOrigin = MultiOrigin(Kind.Tezos, payload.toU8a())
 
         public fun read(buffer: ByteBuffer): MultiOrigin {
             return when (val kind = buffer.readByte()) {
