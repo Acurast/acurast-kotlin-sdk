@@ -188,7 +188,7 @@ class RpcTest {
 
         assertEquals(2, response.size)
         assertEquals(0, response[0].slot)
-        assertEquals(BigInteger.ZERO, response[0].startDelay)
+        assertEquals(0, response[0].startDelay)
         assertEquals(Fungibility.Kind.Fungible, response[0].feePerExecution.fungibility.kind)
         assertEquals(BigInteger.valueOf(30_002), response[0].feePerExecution.fungibility.amount)
         assertTrue(response[0].acknowledged)

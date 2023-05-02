@@ -65,8 +65,13 @@ public data class JobSchedule(
     public val startTime: Long,
     // End time in milliseconds since Unix Epoch.
     //
-    // Represents the latest point in time where a job execution can end, assuming the worst-case `duration`.
-    // Means every job needs to fit into `[startTime, endTime]`,
+    // Represents the end time (exclusive) in milliseconds since Unix Epoch
+    // of the period in which a job execution can start, relative to `startDelay == 0`, independent of `duration`.
+    //
+    // Hence the latest possible start time is `endTime + startDelay - 1`.
+    // and all executions fit into `[startTime + startDelay, endTime + duration + startDelay]`.
+    //
+    // (startDelay is the actual start delay chosen within `[0, maxStartDelay]` during assigning the job to an available processor)
     public val endTime: Long,
     // Interval at which to repeat execution in milliseconds.
     public val interval: Long,

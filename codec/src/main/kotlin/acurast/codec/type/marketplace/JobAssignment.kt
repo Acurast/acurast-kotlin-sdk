@@ -13,7 +13,7 @@ public data class JobAssignment(
     public val processor: AccountId32,
     public val jobId: JobIdentifier,
     public val slot: Int,
-    public val startDelay: BigInteger,
+    public val startDelay: Long,
     public val feePerExecution: MultiAssetV1,
     public val acknowledged: Boolean,
     public val sla: SLA
@@ -32,7 +32,7 @@ public data class JobAssignment(
                 processor,
                 jobId = jobId,
                 slot = value.readCompactInteger(),
-                startDelay = value.long.toBigInteger(),
+                startDelay = value.long,
                 feePerExecution = MultiAssetV1.read(value),
                 acknowledged = value.readBoolean(),
                 sla = SLA.read(value)
