@@ -28,7 +28,7 @@ class XcmTest {
 
     @Test
     fun encodeAssetId() {
-        val assetId = AssetId(MultiLocation(
+        val assetId = AssetId.Concrete(MultiLocation(
             parents = 1,
             interior = JunctionsV1.X3(
                 JunctionV1.Parachain(1000),
@@ -40,7 +40,7 @@ class XcmTest {
         val expectedEncoding = "00010300a10f04320558"
         Assert.assertEquals(expectedEncoding, assetId.toU8a().toHex())
 
-        val decoded = AssetId.read(ByteBuffer.wrap(expectedEncoding.hexToBa()))
+        val decoded = AssetId.Decoder.read(ByteBuffer.wrap(expectedEncoding.hexToBa()))
         Assert.assertEquals(decoded, assetId)
     }
 }

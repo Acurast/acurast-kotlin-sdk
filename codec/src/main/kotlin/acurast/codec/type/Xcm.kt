@@ -5,55 +5,50 @@ import java.io.UnsupportedEncodingException
 import java.math.BigInteger
 import java.nio.ByteBuffer
 
-public data class AssetId(public val kind: Kind): ToU8a {
-    private var location: MultiLocation? = null
-    private var bytes: ByteArray? = null
-
-    public constructor(location: MultiLocation) : this(Kind.Concrete) {
-        this.location = location
-    }
-
-    public constructor(bytes: ByteArray) : this(Kind.Abstract) {
-        this.bytes = bytes
-    }
-
-    /**
-     * XCM asset ID kinds.
-     */
-    public enum class Kind(public val id: Byte): ToU8a {
+public sealed interface AssetId: ToU8a {
+    public enum class Tag(public val id: Byte) : ToU8a {
         Concrete(0),
         Abstract(1);
 
         override fun toU8a(): ByteArray = id.toU8a()
     }
 
-    override fun toU8a(): ByteArray {
-        return kind.toU8a() + if (kind == Kind.Concrete) getConcrete().toU8a() else getAbstract().toU8a()
+    public sealed interface Kind {
+        public val tag: Tag
+
+        public companion object {
+            internal val values: List<Kind>
+                get() = listOf(
+                    Concrete,
+                    Abstract
+                )
+        }
     }
 
-    public companion object {
+    public data class Concrete(val location: MultiLocation) : AssetId {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Concrete
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + location.toU8a()
+    }
+
+    public data class Abstract(val bytes: ByteArray) : AssetId {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Abstract
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + bytes
+    }
+
+    public object Decoder {
         public fun read(buffer: ByteBuffer): AssetId {
-            return when (buffer.readByte()) {
-                Kind.Concrete.id -> AssetId(MultiLocation.read(buffer))
-                Kind.Abstract.id -> AssetId(buffer.readByteArray())
-                else -> throw UnsupportedEncodingException()
+            return when (val kind = buffer.readByte()) {
+                Tag.Concrete.id -> Concrete(MultiLocation.read(buffer))
+                Tag.Abstract.id -> Abstract(buffer.readByteArray()) // TODO
+                else -> throw UnsupportedEncodingException("Unknown AssetId kind: $kind.")
             }
         }
-    }
-
-    public fun getConcrete() : MultiLocation {
-        if (kind != Kind.Concrete && location == null) {
-            throw Exception("The asset is not Concrete.")
-        }
-        return location!!
-    }
-
-
-    public fun getAbstract() : ByteArray {
-        if (kind != Kind.Abstract && bytes == null) {
-            throw Exception("The asset is not Abstract.")
-        }
-        return bytes!!
     }
 }
 
@@ -526,7 +521,7 @@ public data class MultiAssetV1(
     public companion object {
         public fun read(buffer: ByteBuffer): MultiAssetV1 {
             return MultiAssetV1(
-                AssetId.read(buffer),
+                AssetId.Decoder.read(buffer),
                 Fungibility.V1.read(buffer)
             )
         }

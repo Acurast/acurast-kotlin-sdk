@@ -23,10 +23,9 @@ class Test {
 
         Assert.assertEquals(jobAssignment.slot, 0)
 
-        Assert.assertEquals(jobAssignment.feePerExecution.id.kind, AssetId.Kind.Concrete)
-        val location = jobAssignment.feePerExecution.id.getConcrete()
-        Assert.assertEquals(location.parents, 1)
-        Assert.assertTrue(location.interior is JunctionsV1.X3)
+        val location = jobAssignment.feePerExecution.id as AssetId.Concrete
+        Assert.assertEquals(location.location.parents, 1)
+        Assert.assertTrue(location.location.interior is JunctionsV1.X3)
 
         Assert.assertEquals(jobAssignment.feePerExecution.fungibility.kind, Fungibility.Kind.Fungible)
         Assert.assertEquals(jobAssignment.feePerExecution.fungibility.amount, BigInteger.valueOf(30_002))

@@ -24,7 +24,7 @@ class MarketplaceTest {
 
     @Test
     fun encodeAdvertiseCall() {
-        val rewardAsset = AssetId(
+        val rewardAsset = AssetId.Concrete(
             MultiLocation(
                 parents = 1,
                 interior = JunctionsV1.X3(
