@@ -97,3 +97,18 @@ public data class ReportCall(
                 executionResult.toU8a()
     }
 }
+
+/**
+ * Extrinsic method call 'finalizeJob'.
+ *
+ * @param callIndex The "finalizeJob" call index (pallet index + call index).
+ * @param jobId The identifier of the job being reported.
+ */
+public data class FinalizeJob(
+    val callIndex: ByteArray,
+    val jobId: JobIdentifier
+): ExtrinsicCall {
+    override fun toU8a(): ByteArray {
+        return callIndex + jobId.toU8a()
+    }
+}
