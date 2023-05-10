@@ -21,9 +21,9 @@ public data class JobAssignment(
     public companion object {
         public fun read(l: List<String>): JobAssignment {
             val key = ByteBuffer.wrap(l[0].hexToBa())
-            key.skip(48); // Skip <pallet_name>, <method_name>, <processor_hash>
+            key.readBytes(48); // Skip <pallet_name>, <method_name>, <processor_hash>
             val processor = key.readAccountId32()
-            key.skip(16); // Skip <requester_hash>
+            key.readBytes(16); // Skip <requester_hash>
             val jobId = JobIdentifier.read(key)
 
             val value = ByteBuffer.wrap(l[1].hexToBa())

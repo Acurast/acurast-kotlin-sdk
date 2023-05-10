@@ -45,7 +45,7 @@ public sealed interface AssetId: ToU8a {
         public fun read(buffer: ByteBuffer): AssetId {
             return when (val kind = buffer.readByte()) {
                 Tag.Concrete.id -> Concrete(MultiLocation.read(buffer))
-                Tag.Abstract.id -> Abstract(buffer.readByteArray())
+                Tag.Abstract.id -> Abstract(buffer.readBytes(32))
                 else -> throw UnsupportedEncodingException("Unknown AssetId kind: $kind.")
             }
         }

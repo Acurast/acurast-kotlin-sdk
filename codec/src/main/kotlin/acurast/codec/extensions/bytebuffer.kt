@@ -67,6 +67,12 @@ public fun ByteBuffer.readByteArray(): ByteArray = littleEndian {
     ba
 }
 
+public fun ByteBuffer.readBytes(offset: Int): ByteArray = littleEndian {
+    val ba = ByteArray(offset)
+    get(ba)
+    ba
+}
+
 public fun ByteBuffer.readOptionalBoolean(): Boolean? = littleEndian {
     when (this.get() == 0x00.toByte()) {
         true -> null
@@ -84,10 +90,6 @@ public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer
             }
         }
     }
-}
-
-public fun ByteBuffer.skip(offset: Int): Unit = littleEndian {
-    get(ByteArray(offset))
 }
 
 public fun ByteBuffer.readCompactU128(): BigInteger = littleEndian {

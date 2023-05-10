@@ -3,7 +3,6 @@ package acurast.codec.type.marketplace
 import acurast.codec.extensions.*
 import acurast.codec.type.AssetId
 import acurast.codec.type.Fungibility
-import acurast.codec.type.JunctionV1
 import acurast.codec.type.JunctionsV1
 import acurast.codec.type.acurast.MultiOrigin
 import org.junit.Assert
@@ -34,5 +33,30 @@ class Test {
         Assert.assertEquals(jobAssignment.sla.met, 0)
 
         Assert.assertEquals(jobAssignment.acknowledged, false)
+    }
+
+    @Test
+    fun decodeJobAssignment2() {
+        val match = listOf("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73294a4b1341343766e940203af83912be3d02615142611e57a89cae9c12717f02e6397fe5c50ea39f4a04111bd48128360443ea2795ab2e977064efd0f2cc59260154008a8584be3718453e78923713a6966202b05f99c610000000000000000000000000000000","0x00000000000000000001000000000000000000000000000000000000000000000000000000000000000100d907010300000000000000000000000000000008008402219033066a8cf449fd8082a0e0a484a7ee52f3750058f51a729cc2be86579af8018402052a01fdd8cf9242388fa560e145f42dbc8190008427cfc47683d05fecd49549")
+        val jobAssignment = JobAssignment.read(match)
+
+        Assert.assertEquals(jobAssignment.processor.toU8a().toHex(),"3d02615142611e57a89cae9c12717f02e6397fe5c50ea39f4a04111bd4812836")
+        Assert.assertEquals(MultiOrigin.Kind.Tezos, jobAssignment.jobId.origin.kind)
+        Assert.assertEquals("54008a8584be3718453e78923713a6966202b05f99c6", jobAssignment.jobId.origin.source.toHex())
+        Assert.assertEquals(BigInteger("16"), jobAssignment.jobId.id)
+
+        Assert.assertEquals(jobAssignment.slot, 0)
+
+        println(jobAssignment)
+        val location = jobAssignment.feePerExecution.id as AssetId.Abstract
+        Assert.assertEquals(location.bytes.toHex(), "0000000000000000000000000000000000000000000000000000000000000001")
+
+        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.kind, Fungibility.Kind.Fungible)
+        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.amount, BigInteger.valueOf(502))
+
+        Assert.assertEquals(jobAssignment.sla.total, 3)
+        Assert.assertEquals(jobAssignment.sla.met, 0)
+
+        Assert.assertEquals(jobAssignment.acknowledged, true)
     }
 }
