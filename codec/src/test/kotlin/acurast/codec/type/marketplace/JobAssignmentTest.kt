@@ -1,9 +1,6 @@
 package acurast.codec.type.marketplace
 
 import acurast.codec.extensions.*
-import acurast.codec.type.AssetId
-import acurast.codec.type.Fungibility
-import acurast.codec.type.JunctionsV1
 import acurast.codec.type.acurast.MultiOrigin
 import org.junit.Assert
 import org.junit.Test
@@ -12,50 +9,40 @@ import java.math.BigInteger
 class Test {
     @Test
     fun decodeJobAssignment() {
-        val match = listOf("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d733e7c1e81d34082d8f34de585b45ce09353cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f219658239c5938c7ca44e8e83dd55541eb7f001cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c01000000000000000000000000000000","0x00000000000000000000010300a10f0432055800cad401000010000000000000000000000000000000")
+        val match = listOf("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73bda717e2c1dbd94fc3adce6ba1ba9c0fd80a8b0d800a3320528693947f7317871b2d51e5f3c8f3d0d4e4f7e6938ed68f8eab5b223dc34c614476ea3d8bb6dd5900d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d03000000000000000000000000000000","0x00d007000000000000ea030000000000000000000000000000011e1c000000000000000000000000000008008402afe7b554c9bf483bff2e893c683cfdb8f1dcf17ef3b2e4d1067d48c8a50467aa018402ee37f55f791cf10d2fa2bb7c9743bd30226fdfe5364465b9903cf3eb159e98f5")
         val jobAssignment = JobAssignment.read(match)
 
-        Assert.assertEquals(jobAssignment.processor.toU8a().toHex(),"53cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f2196")
+        Assert.assertEquals(jobAssignment.processor.toU8a().toHex(),"d80a8b0d800a3320528693947f7317871b2d51e5f3c8f3d0d4e4f7e6938ed68f")
         Assert.assertEquals(MultiOrigin.Kind.Acurast, jobAssignment.jobId.origin.kind)
-        Assert.assertEquals("1cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c", jobAssignment.jobId.origin.source.toHex())
-        Assert.assertEquals(BigInteger.ONE, jobAssignment.jobId.id)
+        Assert.assertEquals("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", jobAssignment.jobId.origin.source.toHex())
+        Assert.assertEquals(BigInteger("3"), jobAssignment.jobId.id)
 
         Assert.assertEquals(jobAssignment.slot, 0)
 
-        val location = jobAssignment.feePerExecution.id as AssetId.Concrete
-        Assert.assertEquals(location.location.parents, 1)
-        Assert.assertTrue(location.location.interior is JunctionsV1.X3)
+        Assert.assertEquals(jobAssignment.feePerExecution.x, BigInteger.valueOf(1002))
 
-        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.kind, Fungibility.Kind.Fungible)
-        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.amount, BigInteger.valueOf(30_002))
-
-        Assert.assertEquals(jobAssignment.sla.total, 16)
+        Assert.assertEquals(jobAssignment.sla.total, 7198)
         Assert.assertEquals(jobAssignment.sla.met, 0)
 
-        Assert.assertEquals(jobAssignment.acknowledged, false)
+        Assert.assertEquals(jobAssignment.acknowledged, true)
     }
 
     @Test
     fun decodeJobAssignment2() {
-        val match = listOf("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73294a4b1341343766e940203af83912be3d02615142611e57a89cae9c12717f02e6397fe5c50ea39f4a04111bd48128360443ea2795ab2e977064efd0f2cc59260154008a8584be3718453e78923713a6966202b05f99c610000000000000000000000000000000","0x00000000000000000001000000000000000000000000000000000000000000000000000000000000000100d907010300000000000000000000000000000008008402219033066a8cf449fd8082a0e0a484a7ee52f3750058f51a729cc2be86579af8018402052a01fdd8cf9242388fa560e145f42dbc8190008427cfc47683d05fecd49549")
+        val match = listOf("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73bda717e2c1dbd94fc3adce6ba1ba9c0fd80a8b0d800a3320528693947f7317871b2d51e5f3c8f3d0d4e4f7e6938ed68f8eab5b223dc34c614476ea3d8bb6dd5900d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d03000000000000000000000000000000","0x00d007000000000000ea030000000000000000000000000000011e1c000000000000000000000000000008008402afe7b554c9bf483bff2e893c683cfdb8f1dcf17ef3b2e4d1067d48c8a50467aa018402ee37f55f791cf10d2fa2bb7c9743bd30226fdfe5364465b9903cf3eb159e98f5")
         val jobAssignment = JobAssignment.read(match)
 
-        Assert.assertEquals(jobAssignment.processor.toU8a().toHex(),"3d02615142611e57a89cae9c12717f02e6397fe5c50ea39f4a04111bd4812836")
-        Assert.assertEquals(MultiOrigin.Kind.Tezos, jobAssignment.jobId.origin.kind)
-        Assert.assertEquals("54008a8584be3718453e78923713a6966202b05f99c6", jobAssignment.jobId.origin.source.toHex())
-        Assert.assertEquals(BigInteger("16"), jobAssignment.jobId.id)
+        Assert.assertEquals(jobAssignment.processor.toU8a().toHex(),"d80a8b0d800a3320528693947f7317871b2d51e5f3c8f3d0d4e4f7e6938ed68f")
+        Assert.assertEquals(MultiOrigin.Kind.Acurast, jobAssignment.jobId.origin.kind)
+        Assert.assertEquals("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", jobAssignment.jobId.origin.source.toHex())
+        Assert.assertEquals(BigInteger("3"), jobAssignment.jobId.id)
 
         Assert.assertEquals(jobAssignment.slot, 0)
 
-        println(jobAssignment)
-        val location = jobAssignment.feePerExecution.id as AssetId.Abstract
-        Assert.assertEquals(location.bytes.toHex(), "0000000000000000000000000000000000000000000000000000000000000001")
+        Assert.assertEquals(jobAssignment.feePerExecution.x, BigInteger.valueOf(1002))
 
-        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.kind, Fungibility.Kind.Fungible)
-        Assert.assertEquals(jobAssignment.feePerExecution.fungibility.amount, BigInteger.valueOf(502))
-
-        Assert.assertEquals(jobAssignment.sla.total, 3)
-        Assert.assertEquals(jobAssignment.sla.met, 0)
+        Assert.assertEquals(7198, jobAssignment.sla.total)
+        Assert.assertEquals(0, jobAssignment.sla.met)
 
         Assert.assertEquals(jobAssignment.acknowledged, true)
     }
