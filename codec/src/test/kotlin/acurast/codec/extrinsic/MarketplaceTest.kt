@@ -24,25 +24,12 @@ class MarketplaceTest {
 
     @Test
     fun encodeAdvertiseCall() {
-        val rewardAsset = AssetId.Concrete(
-            MultiLocation(
-                parents = 1,
-                interior = JunctionsV1.X3(
-                    JunctionV1.Parachain(1000),
-                    JunctionV1.PalletInstance(50),
-                    JunctionV1.GeneralIndex(BigInteger.valueOf(22)),
-                )
-            )
-        )
         val advertisement = MarketplaceAdvertisement(
-            pricing = listOf(
-                MarketplacePricing(
-                    rewardAsset,
-                    feePerMillisecond = UInt128(BigInteger.ONE),
-                    feePerStorageByte = UInt128(BigInteger.ONE),
-                    baseFeePerExecution = UInt128(BigInteger.ONE),
-                    schedulingWindow = SchedulingWindow(SchedulingWindow.Kind.End, UInt64(10000))
-                )
+            pricing = MarketplacePricing(
+                feePerMillisecond = UInt128(BigInteger.ONE),
+                feePerStorageByte = UInt128(BigInteger.ONE),
+                baseFeePerExecution = UInt128(BigInteger.ONE),
+                schedulingWindow = SchedulingWindow(SchedulingWindow.Kind.End, UInt64(10000))
             ),
             maxMemory = 1,
             networkRequestQuota = 2,
@@ -51,7 +38,7 @@ class MarketplaceTest {
             availableModules = listOf(JobModule.DataEncryption)
         )
         val call = AdvertiseCall(byteArrayOf(0x2b, 0x00), advertisement)
-        val expected = "2b000400010300a10f04320558010000000000000000000000000000000100000000000000000000000000000001000000000000000000000000000000001027000000000000010000000203000000010400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0400"
+        val expected = "2b00010000000000000000000000000000000100000000000000000000000000000001000000000000000000000000000000001027000000000000010000000203000000010400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0400"
         Assert.assertEquals(expected, call.toU8a().toHex())
     }
 
