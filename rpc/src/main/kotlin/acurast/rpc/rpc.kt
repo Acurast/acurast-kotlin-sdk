@@ -1,6 +1,7 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
+import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration
 import acurast.codec.type.marketplace.JobAssignment
@@ -187,5 +188,36 @@ public class RPC public constructor(
         } catch (e: Throwable) {
             false
         }
+    }
+
+    public suspend fun getJobEnvironment(
+        jobIdentifier: JobIdentifier,
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): JobEnvironment? {
+        val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
+
+        val key =
+            "Acurast".toByteArray().xxH128() +
+                    "ExecutionEnvironment".toByteArray().xxH128() +
+                    jobId.blake2b(128) + jobId +
+                    accountId.blake2b(128) + accountId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout,
+        )
+
+        if (storage == "null" || storage.isEmpty()) {
+            return null
+        }
+
+        return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 }
