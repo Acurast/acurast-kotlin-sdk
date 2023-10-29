@@ -12,7 +12,6 @@ public inline fun <reified T> ByteBuffer.littleEndian(decoder: ByteBuffer.() -> 
     return decoder()
 }
 
-@OptIn(ExperimentalUnsignedTypes::class)
 public fun ByteBuffer.readU32(): UInt = littleEndian { int.toUInt() }
 
 public fun ByteBuffer.readU128(): BigInteger = littleEndian {
