@@ -6,7 +6,7 @@ object Dependencies {
         const val bitcoinj = "0.16.1"
         const val gson = "2.10"
 
-        const val ktor = "2.0.2"
+        const val ktor = "2.3.5"
 
         // Test
         const val junit = "5.+"
