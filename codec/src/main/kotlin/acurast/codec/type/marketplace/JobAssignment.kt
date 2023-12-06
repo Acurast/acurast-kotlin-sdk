@@ -30,7 +30,7 @@ public data class JobAssignment(
             return JobAssignment(
                 processor,
                 jobId = jobId,
-                slot = value.readCompactInteger(),
+                slot = value.readByte().toInt(),
                 startDelay = value.long,
                 feePerExecution = UInt128(value.readU128()),
                 acknowledged = value.readBoolean(),

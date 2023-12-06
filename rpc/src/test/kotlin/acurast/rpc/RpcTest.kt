@@ -194,6 +194,118 @@ class RpcTest {
     }
 
     @Test
+    fun `Get Job Matches 2`() {
+        val paramGetKeys = "1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d733e7c1e81d34082d8f34de585b45ce09353cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f2196"
+        val bodyGetKeys = JSONRequest("state_getKeys", JSONArray().put(paramGetKeys)).toString()
+
+        val getKeysResponse = """                	
+            {
+                "jsonrpc": "2.0",
+                "result": [
+                    "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73d09150b9053d7f4684e2946402e967ac998d2cf8c0590b83951070633f0ff21fe613fae2c18ed2db69b8404f66f4311578dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000",
+                ],
+                "id": 1
+            }
+        """.trimIndent()
+
+        coEvery { httpClient.post(any(), bodyGetKeys, any(), any(), any(), any()) } returns getKeysResponse
+
+        val account = "53cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f2196"
+        val param = JSONArray()
+            .put("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73d09150b9053d7f4684e2946402e967ac998d2cf8c0590b83951070633f0ff21fe613fae2c18ed2db69b8404f66f4311578dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000")
+        val body = JSONRequest("state_queryStorageAt", JSONArray().put(param)).toString()
+
+        val jsonResponse = """                	
+            {
+                "jsonrpc": "2.0",
+                "result": [
+                    {
+                        "block": "0x867a3c35db829c60018b055e85b4b326300e700688f5e5e09960e952428e03dc",
+                        "changes": [
+                            [
+                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d73d09150b9053d7f4684e2946402e967ac998d2cf8c0590b83951070633f0ff21fe613fae2c18ed2db69b8404f66f4311578dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000",
+                                "0x030000000000000000df273a77000000000000000000000000001900000000000000000000000000000000"
+                            ]
+                        ]
+                    }
+                ],
+                "id": 1
+            }
+        """.trimIndent()
+
+        coEvery { httpClient.post(rpcURL, body, any(), any()) } returns jsonResponse
+
+        val response = runBlocking {
+            rpc.getAssignedJobs(account.hexToBa())
+        }
+
+        assertEquals(1, response.size)
+        assertEquals(3, response[0].slot)
+        assertEquals(0, response[0].startDelay)
+        assertEquals(BigInteger.valueOf(2000299999), response[0].feePerExecution.x)
+        assertTrue(!response[0].acknowledged)
+    }
+
+    @Test
+    fun `Get Job Matches 3`() {
+        val paramGetKeys = "1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d733e7c1e81d34082d8f34de585b45ce09353cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f2196"
+        val bodyGetKeys = JSONRequest("state_getKeys", JSONArray().put(paramGetKeys)).toString()
+
+        val getKeysResponse = """                	
+            {
+                "jsonrpc": "2.0",
+                "result": [
+                    "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be59261072337b97a36a2853d61ae29668469d00100b4cf29c67f598e147c5481bba5d332ca37256df9a9984c58ca30fb3624e526e000000000000000000000000000000",
+                    "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be592678dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000"
+                ],
+                "id": 1
+            }
+        """.trimIndent()
+
+        coEvery { httpClient.post(any(), bodyGetKeys, any(), any(), any(), any()) } returns getKeysResponse
+
+        val account = "53cf73c65e36ec0bf3d7539780e83febd2d1b01de0df4f6bb7a95157715f2196"
+        val param = JSONArray()
+            .put("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be59261072337b97a36a2853d61ae29668469d00100b4cf29c67f598e147c5481bba5d332ca37256df9a9984c58ca30fb3624e526e000000000000000000000000000000")
+            .put("0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be592678dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000")
+        val body = JSONRequest("state_queryStorageAt", JSONArray().put(param)).toString()
+
+        val jsonResponse = """                	
+            {
+                "jsonrpc": "2.0",
+                "result": [
+                    {
+                        "block": "0x867a3c35db829c60018b055e85b4b326300e700688f5e5e09960e952428e03dc",
+                        "changes": [
+                            [
+                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be59261072337b97a36a2853d61ae29668469d00100b4cf29c67f598e147c5481bba5d332ca37256df9a9984c58ca30fb3624e526e000000000000000000000000000000",
+                                "0x000000000000000000c1270900000000000000000000000000000100000000000000000000000000000000"
+                            ],
+                            [
+                                "0x1aee6710ac79060b1e13291ba85112af2b949d1a72012eeaa1f6b481830d0d7356e3d8d388a039de16da63e7231ac9839717c7ea2bb68aec76fdd8c6761490939f721d5719d42f80f13529cd69be592678dfc438585deb389231ab96e2c8beeb009a1a0c52c2d7f23820caa7757acf049e07fcb68015919638feece41a4b0ee538df000000000000000000000000000000",
+                                "0x020000000000000000df273a77000000000000000000000000001900000000000000000000000000000000"
+                            ]
+                        ]
+                    }
+                ],
+                "id": 1
+            }
+        """.trimIndent()
+
+        coEvery { httpClient.post(rpcURL, body, any(), any()) } returns jsonResponse
+
+        val response = runBlocking {
+            rpc.getAssignedJobs(account.hexToBa())
+        }
+
+        assertEquals(2, response.size)
+        assertEquals(2, response[1].slot)
+        assertEquals(0, response[0].startDelay)
+        assertEquals(BigInteger.valueOf(600001), response[0].feePerExecution.x)
+        assertTrue(!response[0].acknowledged)
+    }
+
+    @Test
     fun `Get Job Registration`() {
         val account = "1cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c"
         val script = "697066733a2f2f516d516b6d7234576a3772666e4232445a45565a67474d58566b6f4a684d4d6e5a784e336a733565693542514353"
