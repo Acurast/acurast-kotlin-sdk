@@ -17,6 +17,46 @@ public data class RuntimeVersion(
 
 public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
     /**
+     * Perform a call to a builtin on the chain.
+     */
+    public suspend fun call(
+        method: String,
+        data: ByteArray? = null,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null
+    ): String {
+        val param = JSONArray().put(method)
+        // Add method payload
+        if (data != null) {
+            param.put(data.toHex())
+        }
+        // Add block hash if provided
+        if (blockHash != null) {
+            param.put(blockHash.toHex())
+        }
+
+        val body = prepareJSONRequest("state_call", param)
+
+        val response = http_client.post(
+            rpc_url,
+            body = body.toString(),
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout
+        )
+
+        val json = JSONObject(response)
+
+        if (json.has("error")) {
+            throw handleError(json)
+        }
+
+        return  json.optString("result")
+    }
+
+    /**
      * Query storage.
      */
     public suspend fun getStorage(
