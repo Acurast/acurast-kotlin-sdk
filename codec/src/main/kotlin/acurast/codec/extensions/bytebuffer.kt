@@ -12,8 +12,10 @@ public inline fun <reified T> ByteBuffer.littleEndian(decoder: ByteBuffer.() -> 
     return decoder()
 }
 
+public fun ByteBuffer.readU8(): UByte = littleEndian { get().toUByte() }
+public fun ByteBuffer.readU16(): UShort = littleEndian { short.toUShort() }
 public fun ByteBuffer.readU32(): UInt = littleEndian { int.toUInt() }
-
+public fun ByteBuffer.readU64(): ULong = littleEndian { long.toULong() }
 public fun ByteBuffer.readU128(): BigInteger = littleEndian {
     val arr = ByteArray(16)
     get(arr)
@@ -25,7 +27,7 @@ public fun ByteBuffer.readByte(): Byte = littleEndian {
 }
 
 public fun ByteBuffer.readString(): String = littleEndian {
-    val size = readCompactInteger()
+    val size = readCompactInteger().toInt()
     val ba = ByteArray(size)
     get(ba)
     ba.toString(charset = Charset.defaultCharset())
@@ -36,7 +38,7 @@ public fun ByteBuffer.readBoolean(): Boolean = littleEndian {
 }
 
 public fun <T> ByteBuffer.readList(elementParser: ByteBuffer.() -> T): List<T> = littleEndian {
-    val size = readCompactInteger()
+    val size = readCompactInteger().toInt()
     val list = ArrayList<T>(size)
     for (i in 0 until size) {
         list.add(this.elementParser())
@@ -44,24 +46,37 @@ public fun <T> ByteBuffer.readList(elementParser: ByteBuffer.() -> T): List<T> =
     list
 }
 
-public fun ByteBuffer.readCompactInteger(): Int = littleEndian {
-    val byte = this.get().toInt() and 0xff
-    if (byte and 0b11 == 0x00) {
-        return (byte shr 2)
+public fun ByteBuffer.readCompactInteger(): BigInteger = littleEndian {
+    val compactByte = this.get().toInt() and 0xff
+
+    val compactLength = when (compactByte % 4) {
+        0 -> 1
+        1 -> 2
+        2 -> 4
+        else -> 5 + (compactByte - 3) / 4
     }
-    if (byte and 0b11 == 0x01) {
-        this.position(position() - 1)
-        return ((short.toInt() and 0xffff) shr 2)
+
+    return when (compactLength) {
+        1 -> BigInteger.valueOf(compactByte.toLong() shr 2)
+        2 -> {
+            this.position(position() - 1)
+            ((short.toInt() and 0xffff) shr 2).toBigInteger()
+        }
+        4 -> {
+            val ba = ByteArray(compactLength - 1)
+            get(ba)
+            BigInteger((byteArrayOf(compactByte.toByte()) + ba).reversedArray()).divide(BigInteger.valueOf(4))
+        }
+        else -> {
+            val ba = ByteArray(compactLength - 1)
+            get(ba)
+            BigInteger(ba.reversedArray())
+        }
     }
-    if (byte and 0b11 == 0x02) {
-        this.position(position() - 1)
-        return (int shr 2)
-    }
-    throw ScaleDecoderException("compact mode not supported")
 }
 
 public fun ByteBuffer.readByteArray(): ByteArray = littleEndian {
-    val ba = ByteArray(readCompactInteger())
+    val ba = ByteArray(readCompactInteger().toInt())
     get(ba)
     ba
 }
@@ -89,25 +104,4 @@ public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer
             }
         }
     }
-}
-
-public fun ByteBuffer.readCompactU128(): BigInteger = littleEndian {
-    this.order(ByteOrder.LITTLE_ENDIAN)
-    val byte = this.get().toInt() and 0xff
-    if (byte and 0b11 == 0x00) {
-        return (byte shr 2).toBigInteger()
-    }
-    if (byte and 0b11 == 0x01) {
-        this.position(position() - 1)
-        return ((short.toInt() and 0xffff) shr 2).toBigInteger()
-    }
-    if (byte and 0b11 == 0x02) {
-        this.position(position() - 1)
-        return (int shr 2).toBigInteger()
-    }
-
-    val len = byte shr 2
-    val ba = ByteArray(len)
-    get(ba)
-    return BigInteger(ba.reversedArray())
 }

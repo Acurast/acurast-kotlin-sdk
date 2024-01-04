@@ -1,27 +1,65 @@
 package acurast.codec.type
 
+import acurast.codec.extensions.littleEndian
+import acurast.codec.extensions.readByte
 import acurast.codec.extensions.toU8a
 import java.io.UnsupportedEncodingException
+import java.nio.ByteBuffer
 
-public class Option<T> private constructor(private val item: T?) : ToU8a {
-    public companion object {
-        public fun <T> some(item: T): Option<T> = Option(item)
-        public fun <T> none(): Option<T> = Option(null)
+public sealed interface Option<T> : ToU8a {
+    public enum class Tag(public val id: Byte): ToU8a {
+        None(0),
+        Some(1);
+
+        override fun toU8a(): ByteArray = id.toU8a()
     }
 
-    override fun toU8a(): ByteArray {
-        return if (item == null) {
-            // 0x00 Means "None"
-            byteArrayOf(0)
-        } else {
-            //  0x01 Means "Some"
-            byteArrayOf(1) + when (item) {
-                is ByteArray -> item.toU8a()
-                is List<*> -> tryCast<List<ToU8a>>(item).toU8a()
-                is ToU8a -> item.toU8a()
-                else -> throw UnsupportedEncodingException()
+    public sealed interface Kind {
+        public val tag: Tag
+
+        public companion object {
+            internal val values: List<Kind>
+                get() = listOf(
+                    None,
+                    Some
+                )
+        }
+    }
+
+    public object Decoder {
+        public inline fun <reified T> read(buffer: ByteBuffer, optionalParser: ByteBuffer.() -> T): Option<T> = buffer.littleEndian {
+            return when (val tag = buffer.readByte()) {
+                Tag.None.id -> None()
+                Tag.Some.id -> Some(optionalParser(buffer))
+                else -> throw UnsupportedEncodingException("Unknown option tag: $tag")
             }
         }
+    }
+
+    public class None<T> : Option<T>  {
+        public companion object : Kind {
+            override val tag: Tag = Tag.None
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a()
+    }
+
+    public data class Some<T>(private val inner: T) : Option<T>  {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Some
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + when (inner) {
+            is ByteArray -> inner.toU8a()
+            is ToU8a -> inner.toU8a()
+            is List<*> -> tryCast<List<ToU8a>>(inner).toU8a()
+            else -> throw UnsupportedEncodingException()
+        }
+    }
+
+    public companion object {
+        public fun <T> some(item: T): Option<T> = Some(item)
+        public fun <T> none(): Option<T> = None()
     }
 }
 

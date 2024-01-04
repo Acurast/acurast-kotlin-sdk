@@ -46,6 +46,16 @@ public data class UInt8(val x: Byte): ToU8a, ToCompactU8a {
     }
 
     override fun toCompactU8a(): ByteArray {
+        return x.toCompactU8a()
+    }
+}
+
+public data class UInt16(val x: Short): ToU8a, ToCompactU8a {
+    override fun toU8a(): ByteArray {
+        return x.toU8a()
+    }
+
+    override fun toCompactU8a(): ByteArray {
         return x.toLong().toCompactU8a()
     }
 }

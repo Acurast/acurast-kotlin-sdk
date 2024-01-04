@@ -1,5 +1,6 @@
 package acurast.codec.extensions
 
+import acurast.codec.type.CompactMode
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

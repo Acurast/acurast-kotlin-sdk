@@ -1,15 +1,9 @@
 package acurast.codec.extensions
 
+import acurast.codec.type.CompactMode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.and
-
-public enum class CompactMode(public val value: Byte) {
-    One(0b00),
-    Two(0b01),
-    Four(0b10),
-    Big(0b11);
-}
 
 public fun Long.compactMode(): CompactMode {
     return if (this < 0) {

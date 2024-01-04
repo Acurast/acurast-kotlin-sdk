@@ -94,7 +94,7 @@ public sealed interface JunctionV1: ToU8a {
                 Tag.AccountIndex64.id -> AccountIndex64() // TODO
                 Tag.AccountKey20.id -> AccountKey20() // TODO
                 Tag.PalletInstance.id -> PalletInstance(buffer.readByte())
-                Tag.GeneralIndex.id -> GeneralIndex(buffer.readCompactU128())
+                Tag.GeneralIndex.id -> GeneralIndex(buffer.readCompactInteger())
                 Tag.GeneralKey.id -> GeneralKey() // TODO
                 Tag.OnlyChild.id -> OnlyChild() // TODO
                 Tag.Plurality.id -> Plurality() // TODO
@@ -470,7 +470,7 @@ public class Fungibility {
                 return when(buffer.readByte().toInt()) {
                     Kind.Fungible.id -> V1(
                         kind = Kind.Fungible,
-                        amount = buffer.readCompactU128()
+                        amount = buffer.readCompactInteger()
                     )
                     Kind.NonFungible.id -> V1(
                         kind = Kind.Fungible,

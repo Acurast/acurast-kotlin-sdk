@@ -18,7 +18,7 @@ public enum class AccountIdentifier(public val id: Int) {
 /**
  * The signer account identifier used in the scale encoding.
  */
-public class MultiAddress(
+public data class MultiAddress(
     public val type: AccountIdentifier,
     public val bytes: ByteArray
 ): ToU8a {
