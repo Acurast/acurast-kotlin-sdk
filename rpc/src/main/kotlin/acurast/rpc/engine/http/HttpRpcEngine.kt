@@ -17,7 +17,7 @@ public class HttpRpcEngine internal constructor(
         if (peek) peeker?.peek(url, body, headers, parameters, requestTimeout, connectionTimeout)
 
         val response = client.post(
-            urls.random(),
+            if (urls.size == 1) urls.first() else urls.random(),
             body,
             headers,
             parameters,
@@ -27,6 +27,16 @@ public class HttpRpcEngine internal constructor(
 
         return JSONObject(response)
     }
+
+    public fun copy(urls: List<String>? = null, client: HttpClient? = null, block: HttpRpcEngineConfig.() -> Unit = {}): HttpRpcEngine =
+        HttpRpcEngine(urls ?: config.urls, client ?: this.client) {
+            headers = config.headers
+            parameters = config.parameters
+            connectionTimeout = config.connectionTimeout
+            peeker = config.peeker
+
+            block()
+        }
 }
 
 public data class HttpRpcEngineConfig(val urls: List<String>) {
