@@ -28,6 +28,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): FrameSystemAccountInfo {
         val key =
             "System".toByteArray().xxH128() +
@@ -39,6 +40,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         if (storage == "null" || storage.isEmpty()) {
@@ -57,6 +59,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): PalletAssetsAssetAccount {
         val assetIdBytes = assetId.toU8a();
         val key =
@@ -70,6 +73,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
@@ -83,6 +87,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): JobRegistration {
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
@@ -97,6 +102,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
@@ -110,6 +116,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): List<JobAssignment> {
         val jobs: MutableList<JobAssignment> = mutableListOf()
 
@@ -123,6 +130,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         val result = state.queryStorageAt(
@@ -130,6 +138,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         if (result.isNotEmpty()) {
@@ -149,6 +158,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): Boolean {
         val key =
             "Acurast".toByteArray().xxH128() +
@@ -161,6 +171,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
                 blockHash,
                 timeout,
                 engine,
+                peekRequest,
             )
 
             result != "null" && result.isNotEmpty()
@@ -175,6 +186,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): JobEnvironment? {
         val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
@@ -189,6 +201,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             blockHash,
             timeout,
             engine,
+            peekRequest,
         )
 
         if (storage == "null" || storage.isEmpty()) {
