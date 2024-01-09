@@ -2,8 +2,6 @@ package acurast.rpc.pallet
 
 import acurast.rpc.AcurastRpc
 import acurast.rpc.engine.RpcEngine
-import acurast.rpc.engine.http.IHttpClientProvider
-import acurast.rpc.engine.request
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
