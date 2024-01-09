@@ -15,7 +15,7 @@ import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
-public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
+public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
     public val author: Author = Author(defaultEngine)
     public val chain: Chain = Chain(defaultEngine)
     public val state: State = State(defaultEngine)
@@ -27,13 +27,13 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): FrameSystemAccountInfo {
+    ): FrameSystemAccountInfo = engine.contextual { engine ->
         val key =
             "System".toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val storage = state.getStorage(
             storageKey = key,
@@ -44,10 +44,10 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         )
 
         if (storage == "null" || storage.isEmpty()) {
-            return FrameSystemAccountInfo()
+            return@contextual FrameSystemAccountInfo()
         }
 
-        return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
+        return@contextual ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
     }
 
     /**
@@ -58,15 +58,15 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): PalletAssetsAssetAccount {
+    ): PalletAssetsAssetAccount = engine.contextual { engine ->
         val assetIdBytes = assetId.toU8a();
         val key =
             "Assets".toByteArray().xxH128() +
                     "Account".toByteArray().xxH128() +
                     assetIdBytes.blake2b(128) + assetIdBytes +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val storage = state.getStorage(
             storageKey = key,
@@ -76,7 +76,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             peekRequest,
         )
 
-        return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
+        return@contextual ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
     }
 
     /**
@@ -86,9 +86,9 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         jobIdentifier: JobIdentifier,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): JobRegistration {
+    ): JobRegistration = engine.contextual { engine ->
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
 
@@ -105,7 +105,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             peekRequest,
         )
 
-        return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
+        return@contextual JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 
     /**
@@ -115,15 +115,15 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): List<JobAssignment> {
+    ): List<JobAssignment> = engine.contextual { engine ->
         val jobs: MutableList<JobAssignment> = mutableListOf()
 
         val indexKey =
             "AcurastMarketplace".toByteArray().xxH128() +
                     "StoredMatches".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val keys = state.getKeys(
             key = indexKey,
@@ -147,7 +147,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             }
         }
 
-        return jobs
+        return@contextual jobs
     }
 
     /**
@@ -157,15 +157,15 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): Boolean {
+    ): Boolean = engine.contextual { engine ->
         val key =
             "Acurast".toByteArray().xxH128() +
                     "StoredAttestation".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId
 
-        return try {
+        return@contextual try {
             val result = state.getStorage(
                 storageKey = key,
                 blockHash,
@@ -185,9 +185,9 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): JobEnvironment? {
+    ): JobEnvironment? = engine.contextual { engine ->
         val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
         val key =
@@ -205,9 +205,9 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         )
 
         if (storage == "null" || storage.isEmpty()) {
-            return null
+            return@contextual null
         }
 
-        return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
+        return@contextual JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 }

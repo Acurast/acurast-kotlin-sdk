@@ -13,7 +13,7 @@ public data class RuntimeVersion(
     val transactionVersion: Int,
 )
 
-public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
+public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     /**
      * Perform a call to a builtin on the chain.
      */
@@ -22,7 +22,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         data: ByteArray? = null,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
@@ -47,7 +47,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         storageKey: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
@@ -69,7 +69,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         storageKeys: List<String>,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): List<StorageQueryResult> {
         val params = JSONArray().apply {
@@ -91,7 +91,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         key: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): List<String> {
         val params = JSONArray().apply {
@@ -112,7 +112,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getRuntimeVersion(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): RuntimeVersion {
         val params = JSONArray().apply {
@@ -137,7 +137,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getMetadata(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): RuntimeMetadataV14 {
         val params = JSONArray().apply {

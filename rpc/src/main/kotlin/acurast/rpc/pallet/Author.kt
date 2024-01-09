@@ -5,14 +5,14 @@ import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import org.json.JSONArray
 
-public class Author(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
+public class Author(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     /**
      * Submit an extrinsic.
      */
     public suspend fun submitExtrinsic(
         extrinsic: ByteArray,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {

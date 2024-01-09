@@ -7,14 +7,14 @@ import acurast.rpc.type.Header
 import org.json.JSONArray
 import java.math.BigInteger
 
-public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
+public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     /**
      * Query the hash of a block at a given height.
      */
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
@@ -33,7 +33,7 @@ public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
     ): Header {
         val params = JSONArray().apply {
