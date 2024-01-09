@@ -36,8 +36,13 @@ public fun HttpRpcEngine(
             println(message)
         }
     }),
-    block: HttpRpcEngineConfig.() -> Unit,
+    block: HttpRpcEngineConfig.() -> Unit = {},
 ): HttpRpcEngine {
-    val config = HttpRpcEngineConfig(url).apply(block)
+    val config = HttpRpcEngineConfig(url).apply(block).apply {
+        headers = (this.headers.orEmpty() + listOf(
+            "Content-Type" to "application/json",
+            "Accept" to "application/json",
+        )).distinctBy { it.first }
+    }
     return HttpRpcEngine(config, client)
 }
