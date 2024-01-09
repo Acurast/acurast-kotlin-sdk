@@ -1,4 +1,4 @@
-package acurast.rpc.http
+package acurast.rpc.engine.http
 
 public abstract class KtorLogger(public val level: LogLevel = LogLevel.All) {
     public open fun log(message: String) {

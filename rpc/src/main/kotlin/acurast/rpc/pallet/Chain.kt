@@ -1,41 +1,29 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
-import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.http.HttpHeader
+import acurast.rpc.engine.RpcEngine
+import acurast.rpc.engine.request
 import acurast.rpc.type.Header
 import org.json.JSONArray
-import org.json.JSONObject
 import java.math.BigInteger
 
-public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
+public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     /**
      * Query the hash of a block at a given height.
      */
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): String {
-        val param = JSONArray()
-        // Add block number if provided
-        if (blockNumber != null) {
-            param.put(blockNumber.toString(16))
+        val params = JSONArray().apply {
+            // Add block number if provided
+            blockNumber?.let { put(it.toString(16)) }
         }
 
-        val body = prepareJSONRequest("chain_getBlockHash", param)
+        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        return json.optString("result") ?: throw handleError(json)
+        return response.optString("result") ?: throw handleError(response)
     }
 
     /**
@@ -43,28 +31,16 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
      */
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): Header {
-        val param = JSONArray()
-        // Add block hash if provided, otherwise the head block will be queried.
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            // Add block hash if provided, otherwise the head block will be queried.
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("chain_getHeader", param)
-
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        val result = json.optJSONObject("result") ?: throw handleError(json)
+        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout)
+        val result = response.optJSONObject("result") ?: throw handleError(response)
 
         val parentHash = result.optString("parentHash")
         val number = result.optString("number")

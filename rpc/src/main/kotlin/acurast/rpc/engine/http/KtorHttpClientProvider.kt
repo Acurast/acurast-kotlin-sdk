@@ -1,4 +1,4 @@
-package acurast.rpc.http;
+package acurast.rpc.engine.http;
 
 import io.ktor.client.*
 import io.ktor.client.engine.*
