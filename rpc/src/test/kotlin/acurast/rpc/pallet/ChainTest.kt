@@ -47,7 +47,7 @@ class ChainTest {
             }
         """.trimIndent())
 
-        coEvery { engine.request(any(), any()) } returns jsonResponse
+        coEvery { engine.request(any(), any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.chain.getBlockHash()
@@ -55,7 +55,7 @@ class ChainTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
+        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
     }
 
 }

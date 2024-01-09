@@ -9,12 +9,19 @@ public class HttpRpcEngine internal constructor(
     private val config: HttpRpcEngineConfig,
     private val client: HttpClient,
 ) : RpcEngine {
-    override suspend fun request(body: JSONObject, timeout: Long?): JSONObject = with(config) {
+    override suspend fun request(body: JSONObject, timeout: Long?, peek: Boolean): JSONObject = with(config) {
+        val url = urls.random()
+        val body = body.toString()
+        val requestTimeout = timeout
+
+        if (peek) peeker?.peek(url, body, headers, parameters, requestTimeout, connectionTimeout)
+
         val response = client.post(
             urls.random(),
-            body.toString(),
+            body,
             headers,
-            requestTimeout = timeout,
+            parameters,
+            requestTimeout = requestTimeout,
             connectionTimeout = connectionTimeout,
         )
 
@@ -27,6 +34,19 @@ public data class HttpRpcEngineConfig(val urls: List<String>) {
     var parameters: List<HttpParameter>? = null
 
     var connectionTimeout: Long? = null
+
+    var peeker: HttpRpcEnginePeeker? = null
+}
+
+public interface HttpRpcEnginePeeker {
+    public fun peek(
+        url: String,
+        body: String,
+        headers: List<HttpHeader>?,
+        parameters: List<HttpParameter>?,
+        requestTimeout: Long?,
+        connectionTimeout: Long?,
+    )
 }
 
 private fun DefaultHttpClient(): HttpClient = KtorHttpClient(object : KtorLogger() {

@@ -53,7 +53,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { engine.request(any(), any()) } returns jsonResponse
+        coEvery { engine.request(any(), any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.isAttested(account.hexToBa())
@@ -61,7 +61,7 @@ class AcurastRpcTest {
 
         assertTrue(response)
 
-        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
+        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
     }
 
     @Test
@@ -93,7 +93,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { engine.request(any(), any()) } returns jsonResponse
+        coEvery { engine.request(any(), any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.getAccountInfo(account.hexToBa())
@@ -101,7 +101,7 @@ class AcurastRpcTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
+        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
     }
 
     @Test
@@ -127,7 +127,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { engine.request(any(), any()) } returns jsonResponse
+        coEvery { engine.request(any(), any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.getAccountAssetInfo(assetId, account.hexToBa())
@@ -135,7 +135,7 @@ class AcurastRpcTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
+        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
     }
 
     @Test
@@ -159,6 +159,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
+                peek = any(),
             )
         } returns getKeysResponse
 
@@ -196,6 +197,7 @@ class AcurastRpcTest {
            engine.request(
                body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                timeout = any(),
+               peek = any(),
            )
        } returns queryStorageResponse
 
@@ -231,6 +233,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
+                peek = any(),
             )
         } returns getKeysResponse
 
@@ -264,6 +267,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                 timeout = any(),
+                peek = any(),
             )
         } returns queryStorageResponse
 
@@ -300,6 +304,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
+                peek = any(),
             )
         } returns getKeysResponse
 
@@ -338,6 +343,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                 timeout = any(),
+                peek = any(),
             )
         } returns queryStorageResponse
 
@@ -374,6 +380,7 @@ class AcurastRpcTest {
             engine.request(
                 body = matchJsonRpcRequest(method, params),
                 timeout = any(),
+                peek = any(),
             )
         } returns jsonResponse
 

@@ -15,13 +15,14 @@ public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         blockNumber: BigInteger? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
             // Add block number if provided
             blockNumber?.let { put(it.toString(16)) }
         }
 
-        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout)
+        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optString("result") ?: throw handleError(response)
     }
@@ -33,13 +34,14 @@ public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine = defaultEngine,
+        peekRequest: Boolean = false,
     ): Header {
         val params = JSONArray().apply {
             // Add block hash if provided, otherwise the head block will be queried.
             blockHash?.let { put(it.toHex()) }
         }
 
-        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout)
+        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout, peek = peekRequest)
         val result = response.optJSONObject("result") ?: throw handleError(response)
 
         val parentHash = result.optString("parentHash")

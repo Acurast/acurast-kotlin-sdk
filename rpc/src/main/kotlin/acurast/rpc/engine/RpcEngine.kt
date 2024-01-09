@@ -5,7 +5,11 @@ import org.json.JSONObject
 import kotlin.random.Random
 
 public interface RpcEngine {
-    public suspend fun request(body: JSONObject, timeout: Long? = null): JSONObject
+    public suspend fun request(
+        body: JSONObject,
+        timeout: Long? = null,
+        peek: Boolean = false,
+    ): JSONObject
 }
 
 public suspend fun RpcEngine.request(
@@ -13,6 +17,7 @@ public suspend fun RpcEngine.request(
     method: String,
     params: JSONArray = JSONArray(),
     timeout: Long? = null,
+    peek: Boolean = false,
 ): JSONObject {
     val body = JSONObject().apply {
         put("id", id)
@@ -21,5 +26,5 @@ public suspend fun RpcEngine.request(
         put("params", params)
     }
 
-    return request(body, timeout)
+    return request(body, timeout, peek)
 }
