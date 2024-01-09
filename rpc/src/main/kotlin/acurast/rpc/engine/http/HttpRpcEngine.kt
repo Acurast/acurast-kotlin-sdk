@@ -11,7 +11,7 @@ public class HttpRpcEngine internal constructor(
 ) : RpcEngine {
     override suspend fun request(body: JSONObject, timeout: Long?): JSONObject = with(config) {
         val response = client.post(
-            url,
+            urls.random(),
             body.toString(),
             headers,
             requestTimeout = timeout,
@@ -22,23 +22,25 @@ public class HttpRpcEngine internal constructor(
     }
 }
 
-public data class HttpRpcEngineConfig(val url: String) {
+public data class HttpRpcEngineConfig(val urls: List<String>) {
     var headers: List<HttpHeader>? = null
     var parameters: List<HttpParameter>? = null
 
     var connectionTimeout: Long? = null
 }
 
+private fun DefaultHttpClient(): HttpClient = KtorHttpClient(object : KtorLogger() {
+    override fun log(message: String) {
+        println(message)
+    }
+})
+
 public fun HttpRpcEngine(
-    url: String,
-    client: HttpClient = KtorHttpClient(object : KtorLogger() {
-        override fun log(message: String) {
-            println(message)
-        }
-    }),
+    urls: List<String>,
+    client: HttpClient = DefaultHttpClient(),
     block: HttpRpcEngineConfig.() -> Unit = {},
 ): HttpRpcEngine {
-    val config = HttpRpcEngineConfig(url).apply(block).apply {
+    val config = HttpRpcEngineConfig(urls).apply(block).apply {
         headers = (this.headers.orEmpty() + listOf(
             "Content-Type" to "application/json",
             "Accept" to "application/json",
@@ -46,3 +48,9 @@ public fun HttpRpcEngine(
     }
     return HttpRpcEngine(config, client)
 }
+
+public fun HttpRpcEngine(
+    vararg urls: String,
+    client: HttpClient = DefaultHttpClient(),
+    block: HttpRpcEngineConfig.() -> Unit = {},
+): HttpRpcEngine = HttpRpcEngine(urls.toList(), client, block)
