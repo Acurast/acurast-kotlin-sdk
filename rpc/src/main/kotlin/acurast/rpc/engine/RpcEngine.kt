@@ -13,7 +13,7 @@ public interface RpcEngine<Self : RpcEngine<Self>> {
     ): JSONObject
 
     @Suppress("UNCHECKED_CAST")
-    public suspend fun <T> contextual(action: suspend (Self) -> T): T = action(this as Self)
+    public suspend fun <T> contextual(peek: Boolean = false, action: suspend (Self) -> T): T = action(this as Self)
 }
 
 public suspend fun RpcEngine<*>.request(

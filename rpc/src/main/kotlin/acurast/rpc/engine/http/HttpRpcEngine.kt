@@ -14,7 +14,7 @@ public class HttpRpcEngine internal constructor(
         val body = body.toString()
         val requestTimeout = timeout
 
-        if (peek) peeker?.peek(url, body, headers, parameters, requestTimeout, connectionTimeout)
+        if (peek) peeker?.peekRequest(url, body, headers, parameters, requestTimeout, connectionTimeout)
 
         val response = client.post(
             url,
@@ -28,18 +28,13 @@ public class HttpRpcEngine internal constructor(
         return JSONObject(response)
     }
 
-    override suspend fun <T> contextual(action: suspend (HttpRpcEngine) -> T): T =
-        action(HttpRpcEngine(config.copy(urls = listOf(config.urls.random())), client))
+    override suspend fun <T> contextual(peek: Boolean, action: suspend (HttpRpcEngine) -> T): T {
+        val frozenConfig = config.copy(urls = listOf(config.urls.random()))
 
-    public fun copy(urls: List<String>? = null, client: HttpClient? = null, block: HttpRpcEngineConfig.() -> Unit = {}): HttpRpcEngine =
-        HttpRpcEngine(urls ?: config.urls, client ?: this.client) {
-            headers = config.headers
-            parameters = config.parameters
-            connectionTimeout = config.connectionTimeout
-            peeker = config.peeker
+        if (peek) config.peeker?.peekContext(frozenConfig, client)
 
-            block()
-        }
+        return action(HttpRpcEngine(frozenConfig, client))
+    }
 }
 
 public interface HttpRpcEngineConfig {
@@ -71,14 +66,15 @@ public data class MutableHttpRpcEngineConfig(override val urls: List<String>) : 
 }
 
 public interface HttpRpcEnginePeeker {
-    public fun peek(
+    public fun peekContext(config: HttpRpcEngineConfig, client: HttpClient) {}
+    public fun peekRequest(
         url: String,
         body: String,
         headers: List<HttpHeader>?,
         parameters: List<HttpParameter>?,
         requestTimeout: Long?,
         connectionTimeout: Long?,
-    )
+    ) {}
 }
 
 private fun DefaultHttpClient(): HttpClient = KtorHttpClient(object : KtorLogger() {

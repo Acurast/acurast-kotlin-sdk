@@ -29,7 +29,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): FrameSystemAccountInfo = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): FrameSystemAccountInfo = engine.contextual(peekContext) { engine ->
         val key =
             "System".toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
@@ -60,7 +61,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): PalletAssetsAssetAccount = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): PalletAssetsAssetAccount = engine.contextual(peekContext) { engine ->
         val assetIdBytes = assetId.toU8a();
         val key =
             "Assets".toByteArray().xxH128() +
@@ -88,7 +90,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): JobRegistration = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): JobRegistration = engine.contextual(peekContext) { engine ->
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
 
@@ -117,7 +120,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): List<JobAssignment> = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): List<JobAssignment> = engine.contextual(peekContext) { engine ->
         val jobs: MutableList<JobAssignment> = mutableListOf()
 
         val indexKey =
@@ -159,7 +163,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): Boolean = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): Boolean = engine.contextual(peekContext) { engine ->
         val key =
             "Acurast".toByteArray().xxH128() +
                     "StoredAttestation".toByteArray().xxH128() +
@@ -187,7 +192,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         timeout: Long? = null,
         engine: RpcEngine<*> = defaultEngine,
         peekRequest: Boolean = false,
-    ): JobEnvironment? = engine.contextual { engine ->
+        peekContext: Boolean = false,
+    ): JobEnvironment? = engine.contextual(peekContext) { engine ->
         val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
         val key =
