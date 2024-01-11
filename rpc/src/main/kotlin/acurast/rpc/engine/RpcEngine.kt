@@ -1,5 +1,6 @@
 package acurast.rpc.engine
 
+import acurast.rpc.utils.jsonRpcRequest
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
@@ -22,12 +23,7 @@ public suspend fun RpcEngine<*>.request(
     timeout: Long? = null,
     peek: Boolean = false,
 ): JSONObject {
-    val body = JSONObject().apply {
-        put("id", id)
-        put("jsonrpc", "2.0")
-        put("method", method)
-        put("params", params)
-    }
+    val body = jsonRpcRequest(id, method, params)
 
     return request(body, timeout, peek)
 }
