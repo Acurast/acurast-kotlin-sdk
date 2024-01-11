@@ -23,13 +23,14 @@ import kotlin.test.assertEquals
 
 class AcurastRpcTest {
     @MockK
-    private lateinit var engine: RpcEngine
+    private lateinit var engine: RpcEngine<*>
     private lateinit var acurastRpc: AcurastRpc
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
         acurastRpc = AcurastRpc(engine)
+        coEvery { engine.contextual<Any>(any(), any()) } coAnswers  { secondArg<suspend (RpcEngine<*>) -> Any>().invoke(engine) }
     }
 
     @After

@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 
 class ChainTest {
     @MockK
-    private lateinit var engine: RpcEngine
+    private lateinit var engine: RpcEngine<*>
     private lateinit var acurastRpc: AcurastRpc
 
 
