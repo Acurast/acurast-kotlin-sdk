@@ -10,7 +10,7 @@ public class HttpRpcEngine internal constructor(
     private val client: HttpClient,
 ) : RpcEngine<HttpRpcEngine.Executor> {
 
-    override fun executor(peek: Boolean): Executor {
+    override suspend fun executor(peek: Boolean): Executor {
         val url = config.urls.random()
 
         if (peek) config.peeker?.peekExecutor(url, config, client)

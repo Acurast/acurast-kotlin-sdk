@@ -7,7 +7,7 @@ import kotlin.random.Random
 
 public interface RpcEngine<E : RpcEngine.Executor> {
 
-    public fun executor(peek: Boolean = false): E
+    public suspend fun executor(peek: Boolean = false): E
 
     public interface Executor {
         public suspend fun request(
