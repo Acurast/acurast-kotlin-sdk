@@ -22,8 +22,8 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         data: ByteArray? = null,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): String {
         val params = JSONArray().apply {
             put(method)
@@ -35,6 +35,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockHash?.let { put(it.toHex()) }
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_call", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optString("result") ?: throw handleError(response)
@@ -47,8 +48,8 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         storageKey: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): String {
         val params = JSONArray().apply {
             put(storageKey.toHex())
@@ -57,6 +58,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockHash?.let { put(it.toHex()) }
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getStorage", params = params, timeout = timeout, peek = peekRequest)
 
         return  response.optString("result") ?: throw handleError(response)
@@ -69,8 +71,8 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         storageKeys: List<String>,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): List<StorageQueryResult> {
         val params = JSONArray().apply {
             put(storageKeys.fold(JSONArray()) { acc, key -> acc.put(key) })
@@ -79,6 +81,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockHash?.let { put(it.toHex()) }
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_queryStorageAt", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optJSONArray("result")?.toTypedList<StorageQueryResult>() ?: throw handleError(response)
@@ -91,8 +94,8 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         key: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): List<String> {
         val params = JSONArray().apply {
             put(key.toHex())
@@ -101,6 +104,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockHash?.let { put(it.toHex()) }
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getKeys", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optJSONArray("result")?.toTypedList<String>() ?: throw handleError(response)
@@ -112,8 +116,8 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun getRuntimeVersion(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): RuntimeVersion {
         val params = JSONArray().apply {
             // Add block hash if provided
@@ -121,6 +125,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
 
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getRuntimeVersion", params = params, timeout = timeout, peek = peekRequest)
 
         val result = response.optJSONObject("result") ?: throw handleError(response)
@@ -137,14 +142,15 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun getMetadata(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
+        externalExecutor: RpcEngine.Executor? = null,
     ): RuntimeMetadataV14 {
         val params = JSONArray().apply {
             // Add block hash if provided
             blockHash?.let { put(it.toHex()) }
         }
 
+        val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getMetadata", params = params, timeout = timeout, peek = peekRequest)
         val result = response.optString("result") ?: throw handleError(response)
 

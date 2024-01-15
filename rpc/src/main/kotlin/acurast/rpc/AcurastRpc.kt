@@ -42,8 +42,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
             storageKey = key,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         if (storage == "null" || storage.isEmpty()) {
@@ -78,8 +78,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
             storageKey = key,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
@@ -110,8 +110,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
             storageKey = indexKey,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
@@ -141,16 +141,16 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
             key = indexKey,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         val result = state.queryStorageAt(
             storageKeys = keys,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         if (result.isNotEmpty()) {
@@ -185,8 +185,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
                 storageKey = key,
                 blockHash,
                 timeout,
-                executor,
                 peekRequest,
+                executor,
             )
 
             result != "null" && result.isNotEmpty()
@@ -218,8 +218,8 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
             storageKey = key,
             blockHash,
             timeout,
-            executor,
             peekRequest,
+            executor,
         )
 
         if (storage == "null" || storage.isEmpty()) {
