@@ -6,40 +6,44 @@ import acurast.rpc.engine.http.ktor.KtorLogger
 import org.json.JSONObject
 
 public class HttpRpcEngine internal constructor(
-    private val config: ImmutableHttpRpcEngineConfig,
+    private val config: HttpRpcEngineConfig,
     private val client: HttpClient,
-) : RpcEngine<HttpRpcEngine> {
-    override suspend fun request(body: JSONObject, timeout: Long?, peek: Boolean): JSONObject = with(config) {
-        val url = if (urls.size == 1) urls.first() else urls.random()
-        val body = body.toString()
-        val requestTimeout = timeout
+) : RpcEngine<HttpRpcEngine.Executor> {
 
-        if (peek) peeker?.peekRequest(url, body, headers, parameters, requestTimeout, connectionTimeout)
+    override fun executor(peek: Boolean): Executor {
+        val url = config.urls.random()
 
-        val response = client.post(
-            url,
-            body,
-            headers,
-            parameters,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout,
-        )
+        if (peek) config.peeker?.peekExecutor(url, config, client)
 
-        return JSONObject(response)
+        return Executor(url, config, client)
     }
 
-    override suspend fun <T> contextual(peek: Boolean, action: suspend (HttpRpcEngine) -> T): T {
-        val frozenConfig = config.copy(urls = listOf(config.urls.random()))
+    public class Executor(
+        private val url: String,
+        private val config: HttpRpcEngineConfig,
+        private val client: HttpClient,
+    ) : RpcEngine.Executor {
+        override suspend fun request(body: JSONObject, timeout: Long?, peek: Boolean): JSONObject = with(config) {
+            val body = body.toString()
+            val requestTimeout = timeout
 
-        if (peek) config.peeker?.peekContext(frozenConfig, client)
+            if (peek) peeker?.peekRequest(url, body, headers, parameters, requestTimeout, connectionTimeout)
 
-        return action(HttpRpcEngine(frozenConfig, client))
+            val response = client.post(
+                url,
+                body,
+                headers,
+                parameters,
+                requestTimeout = requestTimeout,
+                connectionTimeout = connectionTimeout,
+            )
+
+            return JSONObject(response)
+        }
     }
 }
-
 public interface HttpRpcEngineConfig {
     public val urls: List<String>
-
     public val headers: List<HttpHeader>?
     public val parameters: List<HttpParameter>?
 
@@ -66,7 +70,7 @@ public data class MutableHttpRpcEngineConfig(override val urls: List<String>) : 
 }
 
 public interface HttpRpcEnginePeeker {
-    public fun peekContext(config: HttpRpcEngineConfig, client: HttpClient) {}
+    public fun peekExecutor(url: String, config: HttpRpcEngineConfig, client: HttpClient) {}
     public fun peekRequest(
         url: String,
         body: String,

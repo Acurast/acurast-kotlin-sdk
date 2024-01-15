@@ -14,7 +14,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
+        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
@@ -22,7 +22,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockNumber?.let { put(it.toString(16)) }
         }
 
-        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout, peek = peekRequest)
+        val response = executor.request(method = "chain_getBlockHash", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optString("result") ?: throw handleError(response)
     }
@@ -33,7 +33,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
+        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
     ): Header {
         val params = JSONArray().apply {
@@ -41,7 +41,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
             blockHash?.let { put(it.toHex()) }
         }
 
-        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout, peek = peekRequest)
+        val response = executor.request(method = "chain_getHeader", params = params, timeout = timeout, peek = peekRequest)
         val result = response.optJSONObject("result") ?: throw handleError(response)
 
         val parentHash = result.optString("parentHash")

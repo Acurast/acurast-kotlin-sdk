@@ -5,18 +5,20 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
 
-public interface RpcEngine<Self : RpcEngine<Self>> {
-    public suspend fun request(
-        body: JSONObject,
-        timeout: Long? = null,
-        peek: Boolean = false,
-    ): JSONObject
+public interface RpcEngine<E : RpcEngine.Executor> {
 
-    @Suppress("UNCHECKED_CAST")
-    public suspend fun <T> contextual(peek: Boolean = false, action: suspend (Self) -> T): T = action(this as Self)
+    public fun executor(peek: Boolean = false): E
+
+    public interface Executor {
+        public suspend fun request(
+            body: JSONObject,
+            timeout: Long? = null,
+            peek: Boolean = false,
+        ): JSONObject
+    }
 }
 
-public suspend fun RpcEngine<*>.request(
+public suspend fun RpcEngine.Executor.request(
     id: UInt = Random.nextLong().toUInt(),
     method: String,
     params: JSONArray = JSONArray(),

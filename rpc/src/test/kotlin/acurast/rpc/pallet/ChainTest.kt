@@ -2,11 +2,8 @@ package acurast.rpc.pallet
 
 import acurast.rpc.AcurastRpc
 import acurast.rpc.engine.RpcEngine
-import io.mockk.MockKAnnotations
-import io.mockk.coEvery
-import io.mockk.coVerify
+import io.mockk.*
 import io.mockk.impl.annotations.MockK
-import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import matcher.matchJsonRpcRequest
 import org.json.JSONArray
@@ -18,14 +15,18 @@ import kotlin.test.assertEquals
 
 class ChainTest {
     @MockK
-    private lateinit var engine: RpcEngine<*>
+    private lateinit var rpcEngine: RpcEngine<*>
+    @MockK
+    private lateinit var rpcExecutor: RpcEngine.Executor
+
     private lateinit var acurastRpc: AcurastRpc
 
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        acurastRpc = AcurastRpc(engine)
+        acurastRpc = AcurastRpc(rpcEngine)
+        every { rpcEngine.executor(any()) } returns rpcExecutor
     }
 
     @After
@@ -47,7 +48,7 @@ class ChainTest {
             }
         """.trimIndent())
 
-        coEvery { engine.request(any(), any(), any()) } returns jsonResponse
+        coEvery { rpcExecutor.request(any(), any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.chain.getBlockHash()
@@ -55,7 +56,7 @@ class ChainTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { engine.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
+        coVerify { rpcExecutor.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
     }
 
 }

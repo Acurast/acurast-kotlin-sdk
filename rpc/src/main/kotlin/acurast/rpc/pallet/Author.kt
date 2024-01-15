@@ -12,14 +12,14 @@ public class Author(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun submitExtrinsic(
         extrinsic: ByteArray,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
+        executor: RpcEngine.Executor = defaultEngine.executor(),
         peekRequest: Boolean = false,
     ): String {
         val params = JSONArray().apply {
             put(extrinsic.toHex())
         }
 
-        val response = engine.request(method = "author_submitExtrinsic", params = params, timeout = timeout, peek = peekRequest)
+        val response = executor.request(method = "author_submitExtrinsic", params = params, timeout = timeout, peek = peekRequest)
 
         return response.optString("result") ?: throw handleError(response)
     }
