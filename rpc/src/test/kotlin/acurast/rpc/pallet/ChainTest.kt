@@ -26,7 +26,7 @@ class ChainTest {
     fun setup() {
         MockKAnnotations.init(this)
         acurastRpc = AcurastRpc(rpcEngine)
-        every { rpcEngine.executor(any()) } returns rpcExecutor
+        coEvery { rpcEngine.executor(any()) } returns rpcExecutor
     }
 
     @After
