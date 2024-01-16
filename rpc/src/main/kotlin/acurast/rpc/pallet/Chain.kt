@@ -20,7 +20,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     ): String {
         val params = JSONArray().apply {
             // Add block number if provided
-            blockNumber?.let { put(it.toString(16)) }
+            blockNumber?.let { put(it.toLong()) }
         }
 
         val executor = externalExecutor ?: defaultEngine.executor()

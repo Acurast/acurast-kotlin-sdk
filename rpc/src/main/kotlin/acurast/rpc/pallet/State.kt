@@ -123,7 +123,6 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val params = JSONArray().apply {
             // Add block hash if provided
             blockHash?.let { put(it.toHex()) }
-
         }
 
         val executor = externalExecutor ?: defaultEngine.executor()
