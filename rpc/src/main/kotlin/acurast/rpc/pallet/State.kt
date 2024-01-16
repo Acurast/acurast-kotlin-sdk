@@ -2,6 +2,7 @@ package acurast.rpc.pallet
 
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
+import acurast.rpc.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import acurast.rpc.type.*
@@ -38,7 +39,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_call", params = params, timeout = timeout, peek = peekRequest)
 
-        return response.optString("result") ?: throw handleError(response)
+        return if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -61,7 +62,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getStorage", params = params, timeout = timeout, peek = peekRequest)
 
-        return  response.optString("result") ?: throw handleError(response)
+        return  if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -152,7 +153,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
 
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getMetadata", params = params, timeout = timeout, peek = peekRequest)
-        val result = response.optString("result") ?: throw handleError(response)
+        val result = if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
 
         return ByteBuffer.wrap(result.hexToBa()).readMetadata()
     }

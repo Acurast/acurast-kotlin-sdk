@@ -1,6 +1,7 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
+import acurast.rpc.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import org.json.JSONArray
@@ -22,6 +23,6 @@ public class Author(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "author_submitExtrinsic", params = params, timeout = timeout, peek = peekRequest)
 
-        return response.optString("result") ?: throw handleError(response)
+        return if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 }
