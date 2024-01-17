@@ -13,7 +13,8 @@ import acurast.codec.type.marketplace.ExecutionResult
 public sealed interface PublicKey: ToU8a {
     public enum class Tag(public val id: Byte) : ToU8a {
         Secp256r1(0),
-        Secp256k1(1);
+        Secp256k1(1),
+        Ed25519(2);
 
         override fun toU8a(): ByteArray = id.toU8a()
     }
@@ -25,7 +26,8 @@ public sealed interface PublicKey: ToU8a {
             internal val values: List<Kind>
                 get() = listOf(
                     Secp256r1,
-                    Secp256k1
+                    Secp256k1,
+                    Ed25519,
                 )
         }
     }
@@ -41,6 +43,14 @@ public sealed interface PublicKey: ToU8a {
     public data class Secp256k1(val bytes: ByteArray): PublicKey {
         public companion object : Kind {
             override val tag: Tag = Tag.Secp256k1
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
+    }
+
+    public data class Ed25519(val bytes: ByteArray): PublicKey {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Ed25519
         }
 
         override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
