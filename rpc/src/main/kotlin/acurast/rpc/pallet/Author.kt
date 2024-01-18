@@ -3,6 +3,7 @@ package acurast.rpc.pallet
 import acurast.codec.extensions.toHex
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.http.HttpHeader
+import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -15,7 +16,7 @@ public class Author(http_client: IHttpClientProvider, rpc_url: String) : PalletR
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null
-    ): String {
+    ): String? {
         val body = prepareJSONRequest("author_submitExtrinsic", JSONArray().put(extrinsic.toHex()));
 
         val response = http_client.post(
@@ -32,6 +33,6 @@ public class Author(http_client: IHttpClientProvider, rpc_url: String) : PalletR
             throw handleError(json)
         }
 
-        return json.optString("result")
+        return json.nullableOptString("result")
     }
 }
