@@ -4,6 +4,7 @@ import acurast.codec.extensions.*
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration
+import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.rpc.http.HttpHeader
 import acurast.rpc.http.IHttpClientProvider
@@ -219,5 +220,32 @@ public class RPC public constructor(
         }
 
         return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    public suspend fun getUpdateInfo(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): ProcessorUpdateInfo? {
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ProcessorUpdateInfo".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout,
+        )
+
+        if (storage == "null" || storage.isEmpty()) {
+            return null
+        }
+
+        return ProcessorUpdateInfo.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 }
