@@ -250,7 +250,7 @@ public class RPC public constructor(
             connectionTimeout = connectionTimeout,
         )
 
-        if (storage == "null" || storage.isEmpty()) {
+        if (storage.isNullOrEmpty()) {
             return null
         }
 
