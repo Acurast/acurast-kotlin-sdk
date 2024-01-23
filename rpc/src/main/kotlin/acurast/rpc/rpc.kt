@@ -1,6 +1,7 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
+import acurast.codec.type.ProcessorVersion
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration
@@ -255,5 +256,29 @@ public class RPC public constructor(
         }
 
         return ProcessorUpdateInfo.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    public suspend fun getKnownBinaryHash(
+        version: ProcessorVersion,
+        blockHash: ByteArray? = null,
+        headers: List<HttpHeader>? = null,
+        requestTimeout: Long? = null,
+        connectionTimeout: Long? = null,
+    ): ByteArray? {
+        val versionBytes = version.toU8a()
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "KnownBinaryHash".toByteArray().xxH128() +
+                    versionBytes.blake2b(128) + versionBytes
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash = blockHash,
+            headers = headers,
+            requestTimeout = requestTimeout,
+            connectionTimeout = connectionTimeout,
+        )
+
+        return storage?.takeIf { it.isNotEmpty() }?.hexToBa()
     }
 }
