@@ -5,6 +5,7 @@ import acurast.codec.extensions.toHex
 import acurast.rpc.http.HttpHeader
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.type.*
+import acurast.rpc.utils.nullableOptString
 import com.google.gson.GsonBuilder
 import org.json.JSONArray
 import org.json.JSONObject
@@ -26,7 +27,7 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null
-    ): String {
+    ): String? {
         val param = JSONArray().put(method)
         // Add method payload
         if (data != null) {
@@ -53,7 +54,7 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
             throw handleError(json)
         }
 
-        return  json.optString("result")
+        return  json.nullableOptString("result")
     }
 
     /**
@@ -65,7 +66,7 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null
-    ): String {
+    ): String? {
         val param = JSONArray().put(storageKey.toHex())
         // Add block hash if provided
         if (blockHash != null) {
@@ -88,7 +89,7 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
             throw handleError(json)
         }
 
-        return  json.optString("result")
+        return  json.nullableOptString("result")
     }
 
     /**
@@ -215,7 +216,7 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         )
 
         val json = JSONObject(response)
-        val result = json.optString("result") ?: throw handleError(json)
+        val result = json.nullableOptString("result") ?: throw handleError(json)
 
         return ByteBuffer.wrap(result.hexToBa()).readMetadata()
     }
