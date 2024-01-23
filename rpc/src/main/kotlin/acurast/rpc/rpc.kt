@@ -54,7 +54,7 @@ public class RPC public constructor(
             connectionTimeout
         )
 
-        if (storage == "null" || storage.isEmpty()) {
+        if (storage.isNullOrEmpty()) {
             return FrameSystemAccountInfo()
         }
 
@@ -71,7 +71,7 @@ public class RPC public constructor(
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null,
-    ): PalletAssetsAssetAccount {
+    ): PalletAssetsAssetAccount? {
         val assetIdBytes = assetId.toU8a();
         val key =
             "Assets".toByteArray().xxH128() +
@@ -87,6 +87,10 @@ public class RPC public constructor(
             connectionTimeout
         )
 
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
         return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
     }
 
@@ -99,7 +103,7 @@ public class RPC public constructor(
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null,
-    ): JobRegistration {
+    ): JobRegistration? {
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
 
@@ -115,6 +119,10 @@ public class RPC public constructor(
             requestTimeout = requestTimeout,
             connectionTimeout = connectionTimeout
         )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
 
         return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
     }
@@ -185,7 +193,7 @@ public class RPC public constructor(
                 connectionTimeout = connectionTimeout
             )
 
-            result != "null" && result.isNotEmpty()
+            !result.isNullOrEmpty()
         } catch (e: Throwable) {
             false
         }
@@ -215,7 +223,7 @@ public class RPC public constructor(
             connectionTimeout = connectionTimeout,
         )
 
-        if (storage == "null" || storage.isEmpty()) {
+        if (storage.isNullOrEmpty()) {
             return null
         }
 

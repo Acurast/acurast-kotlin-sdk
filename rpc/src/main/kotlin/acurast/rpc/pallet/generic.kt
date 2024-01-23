@@ -21,10 +21,9 @@ public abstract class PalletRPC constructor(
     protected val url: URL = URL(rpc_url);
 
     protected fun handleError(json: JSONObject): Exception {
-        System.out.println(json);
         return json.optJSONObject("error")?.let { error ->
             Exception(error.optString("message"))
-        } ?: Exception("something went wrong")
+        } ?: Exception("something went wrong  (JSON: $json)")
     }
 
     protected fun prepareJSONRequest(method: String, params: JSONArray = JSONArray()): JSONObject {

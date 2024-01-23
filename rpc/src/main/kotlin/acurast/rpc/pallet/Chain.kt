@@ -4,6 +4,8 @@ import acurast.codec.extensions.toHex
 import acurast.rpc.http.IHttpClientProvider
 import acurast.rpc.http.HttpHeader
 import acurast.rpc.type.Header
+import acurast.rpc.utils.JSON_RPC_KEY_RESULT
+import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigInteger
@@ -17,7 +19,7 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         headers: List<HttpHeader>? = null,
         requestTimeout: Long? = null,
         connectionTimeout: Long? = null
-    ): String {
+    ): String? {
         val param = JSONArray()
         // Add block number if provided
         if (blockNumber != null) {
@@ -35,7 +37,7 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         )
 
         val json = JSONObject(response)
-        return json.optString("result") ?: throw handleError(json)
+        return if (json.has(JSON_RPC_KEY_RESULT)) json.nullableOptString(JSON_RPC_KEY_RESULT) else throw handleError(json)
     }
 
     /**
@@ -66,10 +68,10 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         val json = JSONObject(response)
         val result = json.optJSONObject("result") ?: throw handleError(json)
 
-        val parentHash = result.optString("parentHash")
-        val number = result.optString("number")
-        val stateRoot = result.optString("stateRoot")
-        val extrinsicsRoot = result.optString("extrinsicsRoot")
+        val parentHash = result.nullableOptString("parentHash") ?: throw handleError(json)
+        val number = result.nullableOptString("number") ?: throw handleError(json)
+        val stateRoot = result.nullableOptString("stateRoot") ?: throw handleError(json)
+        val extrinsicsRoot = result.nullableOptString("extrinsicsRoot") ?: throw handleError(json)
 
         return Header(
             parentHash = parentHash,
