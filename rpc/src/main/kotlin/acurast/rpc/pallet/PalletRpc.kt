@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder
 import org.json.JSONArray
 import org.json.JSONObject
 
-public abstract class PalletRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
+public abstract class PalletRpc(override val defaultEngine: RpcEngine) : Rpc {
 
     protected inline fun <reified T> JSONObject.toTypedObject(): T = parseJSON(toString())
     protected inline fun <reified T> JSONArray.toTypedList(): List<T> = parseJSON<Array<T>>(toString()).toList()

@@ -9,25 +9,23 @@ import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import java.math.BigInteger
 
-public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
+public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     /**
      * Query the hash of a block at a given height.
      */
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
         timeout: Long? = null,
-        peekRequest: Boolean = false,
-        externalExecutor: RpcEngine.Executor? = null,
+        engine: RpcEngine = defaultEngine,
     ): String? {
         val params = JSONArray().apply {
             // Add block number if provided
             blockNumber?.let { put(it.toLong()) }
         }
 
-        val executor = externalExecutor ?: defaultEngine.executor()
-        val response = executor.request(method = "chain_getBlockHash", params = params, timeout = timeout, peek = peekRequest)
+        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout)
 
-        return if(response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
+        return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -36,16 +34,14 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        peekRequest: Boolean = false,
-        externalExecutor: RpcEngine.Executor? = null,
+        engine: RpcEngine = defaultEngine,
     ): Header {
         val params = JSONArray().apply {
             // Add block hash if provided, otherwise the head block will be queried.
             blockHash?.let { put(it.toHex()) }
         }
 
-        val executor = externalExecutor ?: defaultEngine.executor()
-        val response = executor.request(method = "chain_getHeader", params = params, timeout = timeout, peek = peekRequest)
+        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout)
         val result = response.optJSONObject(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
         val parentHash = result.nullableOptString("parentHash") ?: throw handleError(response)

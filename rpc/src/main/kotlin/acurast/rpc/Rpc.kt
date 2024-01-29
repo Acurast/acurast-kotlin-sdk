@@ -3,7 +3,7 @@ package acurast.rpc
 import acurast.rpc.engine.RpcEngine
 
 public interface Rpc {
-    public val defaultEngine: RpcEngine<*>
+    public val defaultEngine: RpcEngine
 }
 
 internal object JsonRpc {

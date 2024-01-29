@@ -15,9 +15,7 @@ import kotlin.test.assertEquals
 
 class ChainTest {
     @MockK
-    private lateinit var rpcEngine: RpcEngine<*>
-    @MockK
-    private lateinit var rpcExecutor: RpcEngine.Executor
+    private lateinit var rpcEngine: RpcEngine
 
     private lateinit var acurastRpc: AcurastRpc
 
@@ -26,7 +24,6 @@ class ChainTest {
     fun setup() {
         MockKAnnotations.init(this)
         acurastRpc = AcurastRpc(rpcEngine)
-        coEvery { rpcEngine.executor(any()) } returns rpcExecutor
     }
 
     @After
@@ -48,7 +45,7 @@ class ChainTest {
             }
         """.trimIndent())
 
-        coEvery { rpcExecutor.request(any(), any(), any()) } returns jsonResponse
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.chain.getBlockHash()
@@ -56,7 +53,7 @@ class ChainTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { rpcExecutor.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
     }
 
 }

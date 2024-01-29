@@ -23,9 +23,7 @@ import kotlin.test.assertEquals
 
 class AcurastRpcTest {
     @MockK
-    private lateinit var rpcEngine: RpcEngine<*>
-    @MockK
-    private lateinit var rpcExecutor: RpcEngine.Executor
+    private lateinit var rpcEngine: RpcEngine
 
     private lateinit var acurastRpc: AcurastRpc
 
@@ -33,7 +31,6 @@ class AcurastRpcTest {
     fun setup() {
         MockKAnnotations.init(this)
         acurastRpc = AcurastRpc(rpcEngine)
-        coEvery { rpcEngine.executor(any()) } returns rpcExecutor
     }
 
     @After
@@ -57,7 +54,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { rpcExecutor.request(any(), any(), any()) } returns jsonResponse
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.isAttested(account.hexToBa())
@@ -65,7 +62,7 @@ class AcurastRpcTest {
 
         assertTrue(response)
 
-        coVerify { rpcExecutor.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
     }
 
     @Test
@@ -97,7 +94,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { rpcExecutor.request(any(), any(), any()) } returns jsonResponse
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.getAccountInfo(account.hexToBa())
@@ -105,7 +102,7 @@ class AcurastRpcTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { rpcExecutor.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
     }
 
     @Test
@@ -131,7 +128,7 @@ class AcurastRpcTest {
             }
         """.trimIndent())
 
-        coEvery { rpcExecutor.request(any(), any(), any()) } returns jsonResponse
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
             acurastRpc.getAccountAssetInfo(assetId, account.hexToBa())
@@ -139,7 +136,7 @@ class AcurastRpcTest {
 
         assertEquals(expectedResponse, response)
 
-        coVerify { rpcExecutor.request(body = matchJsonRpcRequest(method, params), timeout = any(), peek = any()) }
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
     }
 
     @Test
@@ -160,10 +157,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
-                peek = any(),
             )
         } returns getKeysResponse
 
@@ -198,10 +194,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
        coEvery {
-           rpcExecutor.request(
+           rpcEngine.request(
                body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                timeout = any(),
-               peek = any(),
            )
        } returns queryStorageResponse
 
@@ -234,10 +229,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
-                peek = any(),
             )
         } returns getKeysResponse
 
@@ -268,10 +262,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                 timeout = any(),
-                peek = any(),
             )
         } returns queryStorageResponse
 
@@ -305,10 +298,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method = getKeysMethod, params = getKeysParams),
                 timeout = any(),
-                peek = any(),
             )
         } returns getKeysResponse
 
@@ -344,10 +336,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method = queryStorageMethod, params = queryStorageParams),
                 timeout = any(),
-                peek = any(),
             )
         } returns queryStorageResponse
 
@@ -381,10 +372,9 @@ class AcurastRpcTest {
         """.trimIndent())
 
         coEvery {
-            rpcExecutor.request(
+            rpcEngine.request(
                 body = matchJsonRpcRequest(method, params),
                 timeout = any(),
-                peek = any(),
             )
         } returns jsonResponse
 

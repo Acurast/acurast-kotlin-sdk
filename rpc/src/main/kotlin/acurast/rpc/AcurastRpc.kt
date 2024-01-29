@@ -15,7 +15,7 @@ import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
-public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
+public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
     public val author: Author = Author(defaultEngine)
     public val chain: Chain = Chain(defaultEngine)
     public val state: State = State(defaultEngine)
@@ -27,23 +27,18 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): FrameSystemAccountInfo {
         val key =
             "System".toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId
 
-        val executor = engine.executor(peekExecutor)
-
         val storage = state.getStorage(
             storageKey = key,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -61,9 +56,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): PalletAssetsAssetAccount? {
         val assetIdBytes = assetId.toU8a();
         val key =
@@ -72,14 +65,11 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
                     assetIdBytes.blake2b(128) + assetIdBytes +
                     accountId.blake2b(128) + accountId
 
-        val executor = engine.executor(peekExecutor)
-
         val storage = state.getStorage(
             storageKey = key,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -96,9 +86,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         jobIdentifier: JobIdentifier,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): JobRegistration? {
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
@@ -108,14 +96,11 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
                     origin.blake2b(128) + origin +
                     jobId.blake2b(128) + jobId
 
-        val executor = engine.executor(peekExecutor)
-
         val storage = state.getStorage(
             storageKey = indexKey,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine
         )
 
         if (storage.isNullOrEmpty()) {
@@ -132,9 +117,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): List<JobAssignment> {
         val jobs: MutableList<JobAssignment> = mutableListOf()
 
@@ -143,22 +126,18 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
                     "StoredMatches".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId
 
-        val executor = engine.executor(peekExecutor)
-
         val keys = state.getKeys(
             key = indexKey,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine,
         )
 
         val result = state.queryStorageAt(
             storageKeys = keys,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine,
         )
 
         if (result.isNotEmpty()) {
@@ -177,24 +156,19 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): Boolean {
         val key =
             "Acurast".toByteArray().xxH128() +
                     "StoredAttestation".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId
 
-        val executor = engine.executor(peekExecutor)
-
         return try {
             val result = state.getStorage(
                 storageKey = key,
                 blockHash,
                 timeout,
-                peekRequest,
-                executor,
+                engine,
             )
 
             !result.isNullOrEmpty()
@@ -208,9 +182,7 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine<*> = defaultEngine,
-        peekRequest: Boolean = false,
-        peekExecutor: Boolean = false,
+        engine: RpcEngine = defaultEngine,
     ): JobEnvironment? {
         val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
@@ -220,14 +192,11 @@ public class AcurastRpc(override val defaultEngine: RpcEngine<*>) : Rpc {
                     jobId.blake2b(128) + jobId +
                     accountId.blake2b(128) + accountId
 
-        val executor = engine.executor(peekExecutor)
-
         val storage = state.getStorage(
             storageKey = key,
             blockHash,
             timeout,
-            peekRequest,
-            executor,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
