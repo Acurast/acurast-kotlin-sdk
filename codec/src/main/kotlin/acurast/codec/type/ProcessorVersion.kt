@@ -1,5 +1,6 @@
 package acurast.codec.type
 
+import acurast.codec.extensions.readU32
 import acurast.codec.extensions.toU8a
 import java.nio.ByteBuffer
 
@@ -14,7 +15,7 @@ public data class ProcessorVersion(
     public companion object {
         public fun read(value: ByteBuffer): ProcessorVersion {
             val platform =  Platform.read(value)
-            val buildNumber = value.int.toUInt()
+            val buildNumber = value.readU32()
 
             return ProcessorVersion(platform, buildNumber)
         }
