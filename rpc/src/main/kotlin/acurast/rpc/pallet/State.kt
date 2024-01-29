@@ -5,7 +5,10 @@ import acurast.codec.extensions.toHex
 import acurast.rpc.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
-import acurast.rpc.type.*
+import acurast.rpc.type.RuntimeMetadataV14
+import acurast.rpc.type.StorageQueryResult
+import acurast.rpc.type.readMetadata
+import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import java.nio.ByteBuffer
 
@@ -25,7 +28,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         timeout: Long? = null,
         peekRequest: Boolean = false,
         externalExecutor: RpcEngine.Executor? = null,
-    ): String {
+    ): String? {
         val params = JSONArray().apply {
             put(method)
 
@@ -39,7 +42,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_call", params = params, timeout = timeout, peek = peekRequest)
 
-        return if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
+        return if(response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -51,7 +54,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         timeout: Long? = null,
         peekRequest: Boolean = false,
         externalExecutor: RpcEngine.Executor? = null,
-    ): String {
+    ): String? {
         val params = JSONArray().apply {
             put(storageKey.toHex())
 
@@ -62,7 +65,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getStorage", params = params, timeout = timeout, peek = peekRequest)
 
-        return  if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
+        return  if(response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -85,7 +88,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_queryStorageAt", params = params, timeout = timeout, peek = peekRequest)
 
-        return response.optJSONArray("result")?.toTypedList<StorageQueryResult>() ?: throw handleError(response)
+        return response.optJSONArray(JsonRpc.Key.RESULT)?.toTypedList<StorageQueryResult>() ?: throw handleError(response)
     }
 
     /**
@@ -108,7 +111,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getKeys", params = params, timeout = timeout, peek = peekRequest)
 
-        return response.optJSONArray("result")?.toTypedList<String>() ?: throw handleError(response)
+        return response.optJSONArray(JsonRpc.Key.RESULT)?.toTypedList<String>() ?: throw handleError(response)
     }
 
     /**
@@ -128,7 +131,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getRuntimeVersion", params = params, timeout = timeout, peek = peekRequest)
 
-        val result = response.optJSONObject("result") ?: throw handleError(response)
+        val result = response.optJSONObject(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
         return RuntimeVersion(
             result.optInt("specVersion"),
@@ -152,7 +155,7 @@ public class State(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
 
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "state_getMetadata", params = params, timeout = timeout, peek = peekRequest)
-        val result = if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
+        val result = response.nullableOptString(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
         return ByteBuffer.wrap(result.hexToBa()).readMetadata()
     }

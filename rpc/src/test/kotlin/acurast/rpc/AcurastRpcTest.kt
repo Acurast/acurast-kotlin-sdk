@@ -392,6 +392,6 @@ class AcurastRpcTest {
             acurastRpc.getJobRegistration(JobIdentifier(MultiOrigin.Acurast(AccountId32(account.hexToBa())), BigInteger.ONE))
         }
 
-        assertEquals(script, response.script.toHex())
+        assertEquals(script, response?.script?.toHex())
     }
 }

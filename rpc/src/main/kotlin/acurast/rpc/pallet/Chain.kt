@@ -5,6 +5,7 @@ import acurast.rpc.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import acurast.rpc.type.Header
+import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import java.math.BigInteger
 
@@ -17,7 +18,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         timeout: Long? = null,
         peekRequest: Boolean = false,
         externalExecutor: RpcEngine.Executor? = null,
-    ): String {
+    ): String? {
         val params = JSONArray().apply {
             // Add block number if provided
             blockNumber?.let { put(it.toLong()) }
@@ -26,7 +27,7 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "chain_getBlockHash", params = params, timeout = timeout, peek = peekRequest)
 
-        return if(response.has(JsonRpc.Key.RESULT)) response.getString(JsonRpc.Key.RESULT) else throw handleError(response)
+        return if(response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -45,12 +46,12 @@ public class Chain(defaultEngine: RpcEngine<*>) : PalletRpc(defaultEngine) {
 
         val executor = externalExecutor ?: defaultEngine.executor()
         val response = executor.request(method = "chain_getHeader", params = params, timeout = timeout, peek = peekRequest)
-        val result = response.optJSONObject("result") ?: throw handleError(response)
+        val result = response.optJSONObject(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
-        val parentHash = result.optString("parentHash")
-        val number = result.optString("number")
-        val stateRoot = result.optString("stateRoot")
-        val extrinsicsRoot = result.optString("extrinsicsRoot")
+        val parentHash = result.nullableOptString("parentHash") ?: throw handleError(response)
+        val number = result.nullableOptString("number") ?: throw handleError(response)
+        val stateRoot = result.nullableOptString("stateRoot") ?: throw handleError(response)
+        val extrinsicsRoot = result.nullableOptString("extrinsicsRoot") ?: throw handleError(response)
 
         return Header(
             parentHash = parentHash,
