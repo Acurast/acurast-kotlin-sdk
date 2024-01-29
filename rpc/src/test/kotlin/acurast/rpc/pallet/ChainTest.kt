@@ -1,14 +1,13 @@
 package acurast.rpc.pallet
 
-import acurast.rpc.RPC
-import acurast.rpc.http.IHttpClientProvider
-import io.mockk.MockKAnnotations
-import io.mockk.coEvery
-import io.mockk.coVerify
+import acurast.rpc.AcurastRpc
+import acurast.rpc.engine.RpcEngine
+import io.mockk.*
 import io.mockk.impl.annotations.MockK
-import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
+import matcher.matchJsonRpcRequest
 import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -16,15 +15,15 @@ import kotlin.test.assertEquals
 
 class ChainTest {
     @MockK
-    private lateinit var httpClient : IHttpClientProvider
-    private lateinit var rpc: RPC
+    private lateinit var rpcEngine: RpcEngine
 
-    private val rpcURL = "https://example.com"
+    private lateinit var acurastRpc: AcurastRpc
+
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        rpc = RPC(rpcURL, httpClient)
+        acurastRpc = AcurastRpc(rpcEngine)
     }
 
     @After
@@ -34,27 +33,27 @@ class ChainTest {
 
     @Test
     fun `Get Block Hash`() {
-        val body = JSONRequest("chain_getBlockHash", JSONArray()).toString()
+        val method = "chain_getBlockHash"
+        val params = JSONArray()
 
         val expectedResponse = "0x12664e6b6d3eb4dcf6c594a30f5e9e79ab980511a5f7e07ce490e454165caa7d"
-
-        val jsonResponse = """                	
+        val jsonResponse = JSONObject("""                	
             {
                 "jsonrpc": "2.0",
                 "result": "0x12664e6b6d3eb4dcf6c594a30f5e9e79ab980511a5f7e07ce490e454165caa7d",
                 "id": 1
             }
-        """.trimIndent()
+        """.trimIndent())
 
-        coEvery { httpClient.post(any(), any(), any(), any()) } returns jsonResponse
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
-            rpc.chain.getBlockHash()
+            acurastRpc.chain.getBlockHash()
         }
 
         assertEquals(expectedResponse, response)
 
-        coVerify { httpClient.post(rpcURL, body = body, ) }
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
     }
 
 }

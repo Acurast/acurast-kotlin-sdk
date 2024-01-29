@@ -1,16 +1,16 @@
 package acurast.rpc
 
-import acurast.codec.extensions.*
+import acurast.codec.extensions.blake2b
+import acurast.codec.extensions.hexToBa
+import acurast.codec.extensions.toU8a
+import acurast.codec.extensions.xxH128
 import acurast.codec.type.ProcessorVersion
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
-import acurast.rpc.http.HttpHeader
-import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.http.KtorHttpClientProvider
-import acurast.rpc.http.KtorLogger
+import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.State
@@ -20,17 +20,10 @@ import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
-public class RPC public constructor(
-    rpc_url: String,
-    http_client: IHttpClientProvider = KtorHttpClientProvider(object : KtorLogger() {
-        override fun log(message: String) {
-            println(message)
-        }
-    })
-) {
-    public val author: Author = Author(http_client, rpc_url)
-    public val chain: Chain = Chain(http_client, rpc_url)
-    public val state: State = State(http_client, rpc_url)
+public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
+    public val author: Author = Author(defaultEngine)
+    public val chain: Chain = Chain(defaultEngine)
+    public val state: State = State(defaultEngine)
 
     /**
      * Query account information. (nonce, etc...)
@@ -38,21 +31,19 @@ public class RPC public constructor(
     public suspend fun getAccountInfo(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): FrameSystemAccountInfo {
         val key =
             "System".toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val storage = state.getStorage(
             storageKey = key,
-            blockHash = blockHash,
-            headers,
-            requestTimeout,
-            connectionTimeout
+            blockHash,
+            timeout,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -69,23 +60,21 @@ public class RPC public constructor(
         assetId: Int,
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): PalletAssetsAssetAccount? {
         val assetIdBytes = assetId.toU8a();
         val key =
             "Assets".toByteArray().xxH128() +
                     "Account".toByteArray().xxH128() +
                     assetIdBytes.blake2b(128) + assetIdBytes +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val storage = state.getStorage(
             storageKey = key,
-            blockHash = blockHash,
-            headers,
-            requestTimeout,
-            connectionTimeout
+            blockHash,
+            timeout,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -101,9 +90,8 @@ public class RPC public constructor(
     public suspend fun getJobRegistration(
         jobIdentifier: JobIdentifier,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): JobRegistration? {
         val origin = jobIdentifier.origin.toU8a()
         val jobId = jobIdentifier.id.toU8a()
@@ -115,10 +103,9 @@ public class RPC public constructor(
 
         val storage = state.getStorage(
             storageKey = indexKey,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
+            blockHash,
+            timeout,
+            engine
         )
 
         if (storage.isNullOrEmpty()) {
@@ -134,31 +121,28 @@ public class RPC public constructor(
     public suspend fun getAssignedJobs(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): List<JobAssignment> {
         val jobs: MutableList<JobAssignment> = mutableListOf()
 
         val indexKey =
             "AcurastMarketplace".toByteArray().xxH128() +
                     "StoredMatches".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId;
+                    accountId.blake2b(128) + accountId
 
         val keys = state.getKeys(
-            indexKey,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
+            key = indexKey,
+            blockHash,
+            timeout,
+            engine,
         )
 
         val result = state.queryStorageAt(
             storageKeys = keys,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
+            blockHash,
+            timeout,
+            engine,
         )
 
         if (result.isNotEmpty()) {
@@ -176,9 +160,8 @@ public class RPC public constructor(
     public suspend fun isAttested(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): Boolean {
         val key =
             "Acurast".toByteArray().xxH128() +
@@ -188,10 +171,9 @@ public class RPC public constructor(
         return try {
             val result = state.getStorage(
                 storageKey = key,
-                blockHash = blockHash,
-                headers = headers,
-                requestTimeout = requestTimeout,
-                connectionTimeout = connectionTimeout
+                blockHash,
+                timeout,
+                engine,
             )
 
             !result.isNullOrEmpty()
@@ -204,9 +186,8 @@ public class RPC public constructor(
         jobIdentifier: JobIdentifier,
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): JobEnvironment? {
         val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
@@ -218,10 +199,9 @@ public class RPC public constructor(
 
         val storage = state.getStorage(
             storageKey = key,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout,
+            blockHash,
+            timeout,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -234,9 +214,8 @@ public class RPC public constructor(
     public suspend fun getUpdateInfo(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): ProcessorUpdateInfo? {
         val key =
             "AcurastProcessorManager".toByteArray().xxH128() +
@@ -245,10 +224,9 @@ public class RPC public constructor(
 
         val storage = state.getStorage(
             storageKey = key,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout,
+            blockHash,
+            timeout,
+            engine,
         )
 
         if (storage.isNullOrEmpty()) {
@@ -261,9 +239,8 @@ public class RPC public constructor(
     public suspend fun getKnownBinaryHash(
         version: ProcessorVersion,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): ByteArray? {
         val versionBytes = version.toU8a()
         val key =
@@ -273,10 +250,9 @@ public class RPC public constructor(
 
         val storage = state.getStorage(
             storageKey = key,
-            blockHash = blockHash,
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout,
+            blockHash,
+            timeout,
+            engine
         )
 
         return storage?.takeIf { it.isNotEmpty() }?.hexToBa()

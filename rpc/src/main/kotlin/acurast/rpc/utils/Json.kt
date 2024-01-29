@@ -1,6 +1,8 @@
 package acurast.rpc.utils
 
+import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.random.Random
 
 internal const val JSON_RPC_KEY_RESULT = "result"
 
@@ -15,3 +17,11 @@ internal const val JSON_RPC_KEY_RESULT = "result"
  */
 internal fun JSONObject.nullableOptString(key: String): String? =
     if (has(key) && !isNull(key)) getString(key) else null
+
+public fun jsonRpcRequest(id: UInt = Random.nextLong().toUInt(), method: String, params: JSONArray = JSONArray()): JSONObject =
+    JSONObject().apply {
+        put("id", id)
+        put("jsonrpc", "2.0")
+        put("method", method)
+        put("params", params)
+    }

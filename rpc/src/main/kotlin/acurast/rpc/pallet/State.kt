@@ -2,13 +2,14 @@ package acurast.rpc.pallet
 
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
-import acurast.rpc.http.HttpHeader
-import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.type.*
+import acurast.rpc.JsonRpc
+import acurast.rpc.engine.RpcEngine
+import acurast.rpc.engine.request
+import acurast.rpc.type.RuntimeMetadataV14
+import acurast.rpc.type.StorageQueryResult
+import acurast.rpc.type.readMetadata
 import acurast.rpc.utils.nullableOptString
-import com.google.gson.GsonBuilder
 import org.json.JSONArray
-import org.json.JSONObject
 import java.nio.ByteBuffer
 
 public data class RuntimeVersion(
@@ -16,7 +17,7 @@ public data class RuntimeVersion(
     val transactionVersion: Int,
 )
 
-public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
+public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     /**
      * Perform a call to a builtin on the chain.
      */
@@ -24,37 +25,22 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
         method: String,
         data: ByteArray? = null,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): String? {
-        val param = JSONArray().put(method)
-        // Add method payload
-        if (data != null) {
-            param.put(data.toHex())
-        }
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
-        }
+        val params = JSONArray().apply {
+            put(method)
 
-        val body = prepareJSONRequest("state_call", param)
+            // Add method payload
+            data?.let { put(it.toHex()) }
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-
-        if (json.has("error")) {
-            throw handleError(json)
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        return  json.nullableOptString("result")
+        val response = engine.request(method = "state_call", params = params, timeout = timeout)
+
+        return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -63,33 +49,19 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
     public suspend fun getStorage(
         storageKey: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): String? {
-        val param = JSONArray().put(storageKey.toHex())
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            put(storageKey.toHex())
+
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("state_getStorage", param)
+        val response = engine.request(method = "state_getStorage", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-
-        if (json.has("error")) {
-            throw handleError(json)
-        }
-
-        return  json.nullableOptString("result")
+        return  if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -98,32 +70,19 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
     public suspend fun queryStorageAt(
         storageKeys: List<String>,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): List<StorageQueryResult> {
-        val param = JSONArray().put(storageKeys.fold(JSONArray()) { acc, key -> acc.put(key) })
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            put(storageKeys.fold(JSONArray()) { acc, key -> acc.put(key) })
+
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("state_queryStorageAt", param)
+        val response = engine.request(method = "state_queryStorageAt", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        if (json.has("result")) {
-            val result = JSONObject(response).optJSONArray("result").toString()
-            return GsonBuilder().create().fromJson(result, Array<StorageQueryResult>::class.java).toList()
-        }
-        throw handleError(json)
+        return response.optJSONArray(JsonRpc.Key.RESULT)?.toTypedList<StorageQueryResult>() ?: throw handleError(response)
     }
 
     /**
@@ -132,28 +91,19 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
     public suspend fun getKeys(
         key: ByteArray,
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): List<String> {
-        val param = JSONArray().put(key.toHex())
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            put(key.toHex())
+
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("state_getKeys", param)
+        val response = engine.request(method = "state_getKeys", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val result = JSONObject(response).optJSONArray("result").toString()
-        return GsonBuilder().create().fromJson(result, Array<String>::class.java).toList()
+        return response.optJSONArray(JsonRpc.Key.RESULT)?.toTypedList<String>() ?: throw handleError(response)
     }
 
     /**
@@ -161,28 +111,17 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
      */
     public suspend fun getRuntimeVersion(
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): RuntimeVersion {
-        val param = JSONArray()
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("state_getRuntimeVersion", param)
+        val response = engine.request(method = "state_getRuntimeVersion", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        val result = json.optJSONObject("result") ?: throw handleError(json)
+        val result = response.optJSONObject(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
         return RuntimeVersion(
             result.optInt("specVersion"),
@@ -195,28 +134,16 @@ public class State(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
      */
     public suspend fun getMetadata(
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): RuntimeMetadataV14 {
-        val param = JSONArray()
-        // Add block hash if provided
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            // Add block hash if provided
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("state_getMetadata", param)
-
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        val result = json.nullableOptString("result") ?: throw handleError(json)
+        val response = engine.request(method = "state_getMetadata", params = params, timeout = timeout)
+        val result = response.nullableOptString(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
         return ByteBuffer.wrap(result.hexToBa()).readMetadata()
     }

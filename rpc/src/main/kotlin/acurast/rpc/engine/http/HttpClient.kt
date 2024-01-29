@@ -1,4 +1,4 @@
-package acurast.rpc.http;
+package acurast.rpc.engine.http;
 
 /**
  * A key value HTTP header.
@@ -15,9 +15,9 @@ public typealias HttpParameter = Pair<String, String?>
  *
  * Use this interface to register a custom HTTP client implementation.
  * See:
- *  - [KtorHttpClientProvider] for a ready-to-use implementation.
+ *  - [KtorHttpClient] for a ready-to-use implementation.
  */
-public interface IHttpClientProvider {
+public interface HttpClient {
 
     /**
      * Call DELETE HTTP method on specified [baseUrl] with [headers] and [parameters].

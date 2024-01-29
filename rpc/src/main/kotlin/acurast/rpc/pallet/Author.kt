@@ -1,38 +1,27 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
-import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.http.HttpHeader
+import acurast.rpc.JsonRpc
+import acurast.rpc.engine.RpcEngine
+import acurast.rpc.engine.request
 import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
-import org.json.JSONObject
 
-public class Author(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
+public class Author(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     /**
      * Submit an extrinsic.
      */
     public suspend fun submitExtrinsic(
         extrinsic: ByteArray,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): String? {
-        val body = prepareJSONRequest("author_submitExtrinsic", JSONArray().put(extrinsic.toHex()));
-
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-
-        if (json.has("error")) {
-            throw handleError(json)
+        val params = JSONArray().apply {
+            put(extrinsic.toHex())
         }
 
-        return json.nullableOptString("result")
+        val response = engine.request(method = "author_submitExtrinsic", params = params, timeout = timeout)
+
+        return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 }

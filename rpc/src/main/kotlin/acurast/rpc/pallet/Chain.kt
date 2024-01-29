@@ -1,43 +1,31 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
-import acurast.rpc.http.IHttpClientProvider
-import acurast.rpc.http.HttpHeader
+import acurast.rpc.JsonRpc
+import acurast.rpc.engine.RpcEngine
+import acurast.rpc.engine.request
 import acurast.rpc.type.Header
-import acurast.rpc.utils.JSON_RPC_KEY_RESULT
 import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
-import org.json.JSONObject
 import java.math.BigInteger
 
-public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRPC(http_client, rpc_url) {
+public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     /**
      * Query the hash of a block at a given height.
      */
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): String? {
-        val param = JSONArray()
-        // Add block number if provided
-        if (blockNumber != null) {
-            param.put(blockNumber.toString(16))
+        val params = JSONArray().apply {
+            // Add block number if provided
+            blockNumber?.let { put(it.toLong()) }
         }
 
-        val body = prepareJSONRequest("chain_getBlockHash", param)
+        val response = engine.request(method = "chain_getBlockHash", params = params, timeout = timeout)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        return if (json.has(JSON_RPC_KEY_RESULT)) json.nullableOptString(JSON_RPC_KEY_RESULT) else throw handleError(json)
+        return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
     /**
@@ -45,33 +33,21 @@ public class Chain(http_client: IHttpClientProvider, rpc_url: String) : PalletRP
      */
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
-        headers: List<HttpHeader>? = null,
-        requestTimeout: Long? = null,
-        connectionTimeout: Long? = null
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
     ): Header {
-        val param = JSONArray()
-        // Add block hash if provided, otherwise the head block will be queried.
-        if (blockHash != null) {
-            param.put(blockHash.toHex())
+        val params = JSONArray().apply {
+            // Add block hash if provided, otherwise the head block will be queried.
+            blockHash?.let { put(it.toHex()) }
         }
 
-        val body = prepareJSONRequest("chain_getHeader", param)
+        val response = engine.request(method = "chain_getHeader", params = params, timeout = timeout)
+        val result = response.optJSONObject(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
-        val response = http_client.post(
-            rpc_url,
-            body = body.toString(),
-            headers = headers,
-            requestTimeout = requestTimeout,
-            connectionTimeout = connectionTimeout
-        )
-
-        val json = JSONObject(response)
-        val result = json.optJSONObject("result") ?: throw handleError(json)
-
-        val parentHash = result.nullableOptString("parentHash") ?: throw handleError(json)
-        val number = result.nullableOptString("number") ?: throw handleError(json)
-        val stateRoot = result.nullableOptString("stateRoot") ?: throw handleError(json)
-        val extrinsicsRoot = result.nullableOptString("extrinsicsRoot") ?: throw handleError(json)
+        val parentHash = result.nullableOptString("parentHash") ?: throw handleError(response)
+        val number = result.nullableOptString("number") ?: throw handleError(response)
+        val stateRoot = result.nullableOptString("stateRoot") ?: throw handleError(response)
+        val extrinsicsRoot = result.nullableOptString("extrinsicsRoot") ?: throw handleError(response)
 
         return Header(
             parentHash = parentHash,

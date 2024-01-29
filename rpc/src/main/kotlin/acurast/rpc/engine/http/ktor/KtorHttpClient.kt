@@ -1,6 +1,8 @@
-package acurast.rpc.http;
+package acurast.rpc.engine.http.ktor;
 
-import io.ktor.client.*
+import acurast.rpc.engine.http.HttpClient
+import acurast.rpc.engine.http.HttpHeader
+import acurast.rpc.engine.http.HttpParameter
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -10,23 +12,22 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 /**
- * [KtorHttpClientProvider] implementation that uses [Ktor](https://ktor.io/) to satisfy the interface requirements.
+ * [KtorHttpClient] implementation that uses [Ktor](https://ktor.io/) to satisfy the interface requirements.
  *
- * @property engineFactory [Ktor HttpClientEngineFactory][HttpClientEngineFactory] that the underlying [Ktor HttpClient][HttpClient] should be configured with.
+ * @property engineFactory [Ktor HttpClientEngineFactory][HttpClientEngineFactory] that the underlying [Ktor HttpClient][io.ktor.client.HttpClient] should be configured with.
  * @property logger An optional logging configuration.
  */
-public class KtorHttpClientProvider(
+public class KtorHttpClient(
     private val engineFactory: HttpClientEngineFactory<*> = CIO,
     private val logger: KtorLogger? = null,
-): IHttpClientProvider {
+): HttpClient {
     private val json: Json by lazy { Json.Default }
-    private val ktor: HttpClient by lazy {
-        HttpClient(engineFactory) {
+    private val ktor: io.ktor.client.HttpClient by lazy {
+        io.ktor.client.HttpClient(engineFactory) {
             expectSuccess = true
 
             install(HttpTimeout)
@@ -181,6 +182,6 @@ public class KtorHttpClientProvider(
 }
 
 /**
- * Creates a new [KtorHttpClientProvider] instance with a default [CIO HttpClientEngineFactory][CIO] and optional [logger].
+ * Creates a new [KtorHttpClient] instance with a default [CIO HttpClientEngineFactory][CIO] and optional [logger].
  */
-public fun KtorHttpClientProvider(logger: KtorLogger? = null): KtorHttpClientProvider = KtorHttpClientProvider(CIO, logger)
+public fun KtorHttpClient(logger: KtorLogger? = null): KtorHttpClient = KtorHttpClient(CIO, logger)
