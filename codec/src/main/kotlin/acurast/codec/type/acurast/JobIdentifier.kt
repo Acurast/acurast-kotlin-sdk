@@ -44,6 +44,9 @@ public data class MultiOrigin(
     }
 
     public override fun toString(): String = "(kind: ${kind}, source: ${source.toHex()})"
+
+    override fun equals(other: Any?): Boolean = equals(other) { kind == it.kind && source.contentEquals(it.source) }
+    override fun hashCode(): Int = listOf(kind.hashCode(), source.contentHashCode()).calculateHashCode()
 }
 
 /**
