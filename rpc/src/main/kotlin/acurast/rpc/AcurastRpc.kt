@@ -54,37 +54,6 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
     }
 
     /**
-     * Query asset information for a given account.
-     */
-    public suspend fun getAccountAssetInfo(
-        assetId: Int,
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): PalletAssetsAssetAccount? {
-        val assetIdBytes = assetId.toU8a();
-        val key =
-            "Assets".toByteArray().xxH128() +
-                    "Account".toByteArray().xxH128() +
-                    assetIdBytes.blake2b(128) + assetIdBytes +
-                    accountId.blake2b(128) + accountId
-
-        val storage = state.getStorage(
-            storageKey = key,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
-    }
-
-    /**
      * Get the registration information of a given job.
      */
     public suspend fun getJobRegistration(
