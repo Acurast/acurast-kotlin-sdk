@@ -11,5 +11,6 @@ internal object JsonRpc {
         const val RESULT = "result"
         const val ERROR = "error"
         const val MESSAGE = "message"
+        const val DATA = "data"
     }
 }
