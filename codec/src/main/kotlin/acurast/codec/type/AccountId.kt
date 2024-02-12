@@ -1,5 +1,7 @@
 package acurast.codec.type
 
+import acurast.codec.extensions.calculateHashCode
+import acurast.codec.extensions.equals
 import acurast.codec.extensions.toU8a
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -34,6 +36,15 @@ public class AccountId32(private val bytes: ByteArray): ToU8a {
     public override fun toU8a(): ByteArray {
         return bytes
     }
+
+    override fun equals(other: Any?): Boolean = equals(other) {
+        bytes.contentEquals(it.bytes)
+    }
+
+    override fun hashCode(): Int =
+        listOf(
+            bytes.contentHashCode(),
+        ).calculateHashCode()
 }
 
 public fun ByteBuffer.readAccountId(): MultiAddress {

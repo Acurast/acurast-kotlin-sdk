@@ -14,9 +14,11 @@ import java.nio.ByteBuffer
 public data class MultiOrigin(
     public val kind: Kind,
     public val source: ByteArray
-): ToU8a {
+) : ToU8a {
     public companion object {
-        public fun Acurast(address: AccountId32): MultiOrigin = MultiOrigin(Kind.Acurast, address.toU8a())
+        public fun Acurast(address: AccountId32): MultiOrigin =
+            MultiOrigin(Kind.Acurast, address.toU8a())
+
         public fun Tezos(payload: ByteArray): MultiOrigin = MultiOrigin(Kind.Tezos, payload.toU8a())
 
         public fun read(buffer: ByteBuffer): MultiOrigin {
@@ -27,7 +29,8 @@ public data class MultiOrigin(
             }
         }
     }
-    public enum class Kind(public val id: Byte): ToU8a {
+
+    public enum class Kind(public val id: Byte) : ToU8a {
         Acurast(0),
         Tezos(1);
 
@@ -55,7 +58,7 @@ public data class MultiOrigin(
 public data class JobIdentifier(
     public val origin: MultiOrigin,
     public val id: BigInteger
-): ToU8a {
+) : ToU8a {
     public companion object {
         public fun read(buffer: ByteBuffer): JobIdentifier {
             val origin = MultiOrigin.read(buffer)

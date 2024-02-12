@@ -52,6 +52,30 @@ public data class JobRegistration(
             )
         }
     }
+
+    override fun equals(other: Any?): Boolean = equals(other) {
+        script.contentEquals(it.script)
+                && allowedSources == it.allowedSources
+                && allowOnlyVerifiedSources == it.allowOnlyVerifiedSources
+                && schedule == it.schedule
+                && memory == it.memory
+                && networkRequests == it.networkRequests
+                && storage == it.storage
+                && requiredModules == it.requiredModules && extra.contentEquals(it.extra)
+    }
+
+    override fun hashCode(): Int =
+        listOf(
+            script.contentHashCode(),
+            allowedSources.hashCode(),
+            allowOnlyVerifiedSources.hashCode(),
+            schedule.hashCode(),
+            memory.hashCode(),
+            networkRequests.hashCode(),
+            storage.hashCode(),
+            requiredModules.hashCode(),
+            extra.contentHashCode(),
+        ).calculateHashCode()
 }
 
 

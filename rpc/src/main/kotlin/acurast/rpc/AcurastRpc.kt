@@ -123,6 +123,42 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         return jobs
     }
 
+    public suspend fun getAssignedJobsWithRegistration(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+        engine: RpcEngine = defaultEngine,
+    ): List<JobAssignment> {
+        val jobs: MutableList<JobAssignment> = mutableListOf()
+
+        val indexKey =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredMatches".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        val keys = state.getKeys(
+            key = indexKey,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val result = state.queryStorageAt(
+            storageKeys = keys,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (result.isNotEmpty()) {
+            for (change in result[0].changes) {
+                jobs.add(JobAssignment.read(change))
+            }
+        }
+
+        return jobs
+    }
+
     /**
      * Verify if the account is associated with an attested device.
      */
