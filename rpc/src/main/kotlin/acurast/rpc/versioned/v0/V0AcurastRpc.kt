@@ -4,7 +4,7 @@ import acurast.codec.extensions.blake2b
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toU8a
 import acurast.codec.extensions.xxH128
-import acurast.codec.type.ProcessorVersion
+import acurast.codec.type.manager.ProcessorVersion
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration

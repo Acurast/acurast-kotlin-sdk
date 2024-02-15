@@ -1,7 +1,6 @@
 package acurast.codec.type.manager
 
 import acurast.codec.extensions.readByteArray
-import acurast.codec.type.ProcessorVersion
 import java.nio.ByteBuffer
 
 public data class ProcessorUpdateInfo(
