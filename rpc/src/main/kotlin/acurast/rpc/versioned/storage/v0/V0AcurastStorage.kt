@@ -1,9 +1,6 @@
-package acurast.rpc.versioned.v0
+package acurast.rpc.versioned.storage.v0
 
-import acurast.codec.extensions.blake2b
-import acurast.codec.extensions.hexToBa
-import acurast.codec.extensions.toU8a
-import acurast.codec.extensions.xxH128
+import acurast.codec.extensions.*
 import acurast.codec.type.manager.ProcessorVersion
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
@@ -11,16 +8,15 @@ import acurast.codec.type.acurast.JobRegistration
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.rpc.engine.RpcEngine
-import acurast.rpc.pallet.Author
-import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.State
+import acurast.rpc.versioned.storage.VersionedAcurastStorage
 import acurast.rpc.type.FrameSystemAccountInfo
 import acurast.rpc.type.PalletAssetsAssetAccount
 import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
 import java.nio.ByteBuffer
 
-public interface V0AcurastRpc {
+public interface V0AcurastStorage : VersionedAcurastStorage {
     public suspend fun getAccountInfo(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
@@ -36,6 +32,15 @@ public interface V0AcurastRpc {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): PalletAssetsAssetAccount?
+
+    /**
+     * Get the manager paired with this device
+     */
+    public suspend fun getManagerIdentifier(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): Int?
 
     /**
      * Get the registration information of a given job.
@@ -88,19 +93,11 @@ public interface V0AcurastRpc {
     }
 }
 
-internal fun V0AcurastRpc(
-    engine: RpcEngine,
-    author: Author,
-    chain: Chain,
-    state: State,
-): V0AcurastRpc = V0AcurastRpcImpl(engine, author, chain, state)
+internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
 
-private class V0AcurastRpcImpl(
-    private val engine: RpcEngine,
-    private val author: Author,
-    private val chain: Chain,
-    private val state: State,
-) : V0AcurastRpc {
+private class V0AcurastStorageImpl(private val engine: RpcEngine, private val state: State) : V0AcurastStorage {
+    override val version: UInt = V0AcurastStorage.VERSION
+
     override suspend fun getAccountInfo(
         accountId: ByteArray,
         blockHash: ByteArray?,
@@ -150,6 +147,30 @@ private class V0AcurastRpcImpl(
         }
 
         return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
+    }
+
+    override suspend fun getManagerIdentifier(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): Int? {
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ProcessorToManagerIdIndex".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return ByteBuffer.wrap(storage.hexToBa()).readU128().toInt()
     }
 
     override suspend fun getJobRegistration(
