@@ -2,7 +2,7 @@ package acurast.rpc.pallet
 
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
-import acurast.rpc.JsonRpc
+import acurast.rpc.utils.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import acurast.rpc.type.RuntimeMetadataV14
@@ -17,7 +17,7 @@ public data class RuntimeVersion(
     val transactionVersion: Int,
 )
 
-public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
+public class State : PalletRpc() {
     /**
      * Perform a call to a builtin on the chain.
      */
@@ -26,7 +26,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         data: ByteArray? = null,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): String? {
         val params = JSONArray().apply {
             put(method)
@@ -50,7 +50,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         storageKey: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): String? {
         val params = JSONArray().apply {
             put(storageKey.toHex())
@@ -71,7 +71,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         storageKeys: List<String>,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): List<StorageQueryResult> {
         val params = JSONArray().apply {
             put(storageKeys.fold(JSONArray()) { acc, key -> acc.put(key) })
@@ -92,7 +92,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
         key: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): List<String> {
         val params = JSONArray().apply {
             put(key.toHex())
@@ -112,7 +112,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getRuntimeVersion(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): RuntimeVersion {
         val params = JSONArray().apply {
             // Add block hash if provided
@@ -135,7 +135,7 @@ public class State(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getMetadata(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): RuntimeMetadataV14 {
         val params = JSONArray().apply {
             // Add block hash if provided

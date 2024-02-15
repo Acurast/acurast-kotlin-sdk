@@ -4,7 +4,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
 
-internal const val JSON_RPC_KEY_RESULT = "result"
+internal object JsonRpc {
+    object Key {
+        const val RESULT = "result"
+        const val ERROR = "error"
+        const val MESSAGE = "message"
+        const val DATA = "data"
+    }
+}
 
 /**
  * JSONObject.optString(key) actually never returns `null`:
