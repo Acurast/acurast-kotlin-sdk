@@ -7,6 +7,7 @@ import acurast.rpc.pallet.Chain
 import acurast.rpc.pallet.RuntimeVersion
 import acurast.rpc.pallet.State
 import acurast.rpc.type.Header
+import acurast.rpc.type.UnsupportedApiVersion
 import acurast.rpc.versioned.storage.AcurastStorage
 import acurast.rpc.versioned.storage.v0.V0AcurastStorage
 import acurast.rpc.versioned.storage.v0.compat
@@ -84,5 +85,5 @@ private class AcurastRpcImpl(
     override fun storage(version: UInt): AcurastStorage = storages[version] ?: failWithUnsupportedApiVersion(version)
 
     private fun failWithUnsupportedApiVersion(version: UInt): Nothing =
-        throw RuntimeException("Acurast RPC API version $version is not supported.")
+        throw UnsupportedApiVersion(version)
 }
