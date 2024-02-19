@@ -76,18 +76,6 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): JobEnvironment?
 
-    public suspend fun getUpdateInfo(
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-    ): ProcessorUpdateInfo?
-
-    public suspend fun getKnownBinaryHash(
-        version: ProcessorVersion,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-    ): ByteArray?
-
     public companion object {
         public const val VERSION: UInt = 0u
     }
@@ -285,50 +273,5 @@ private class V0AcurastStorageImpl(private val engine: RpcEngine, private val st
         }
 
         return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
-    }
-
-    override suspend fun getUpdateInfo(
-        accountId: ByteArray,
-        blockHash: ByteArray?,
-        timeout: Long?,
-    ): ProcessorUpdateInfo? {
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "ProcessorUpdateInfo".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
-        val storage = state.getStorage(
-            storageKey = key,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return ProcessorUpdateInfo.read(ByteBuffer.wrap(storage.hexToBa()))
-    }
-
-    override suspend fun getKnownBinaryHash(
-        version: ProcessorVersion,
-        blockHash: ByteArray?,
-        timeout: Long?,
-    ): ByteArray? {
-        val versionBytes = version.toU8a()
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "KnownBinaryHash".toByteArray().xxH128() +
-                    versionBytes.blake2b(128) + versionBytes
-
-        val storage = state.getStorage(
-            storageKey = key,
-            blockHash,
-            timeout,
-            engine
-        )
-
-        return storage?.takeIf { it.isNotEmpty() }?.hexToBa()
     }
 }

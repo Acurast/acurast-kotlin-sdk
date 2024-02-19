@@ -1,6 +1,10 @@
 package acurast.rpc
 
+import acurast.codec.extensions.blake2b
+import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.xxH128
+import acurast.codec.type.manager.ProcessorUpdateInfo
+import acurast.codec.type.manager.ProcessorVersion
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
@@ -12,6 +16,7 @@ import acurast.rpc.versioned.storage.AcurastStorage
 import acurast.rpc.versioned.storage.v0.V0AcurastStorage
 import acurast.rpc.versioned.storage.v0.compat
 import java.math.BigInteger
+import java.nio.ByteBuffer
 
 public interface AcurastRpc {
     public val engine: RpcEngine
@@ -21,6 +26,9 @@ public interface AcurastRpc {
 
     public suspend fun getApiVersion(blockHash: ByteArray? = null, timeout: Long? = null): UInt
     public suspend fun getRuntimeVersion(blockHash: ByteArray? = null, timeout: Long? = null): RuntimeVersion
+
+    public suspend fun getUpdateInfo(accountId: ByteArray, blockHash: ByteArray? = null, timeout: Long? = null): ProcessorUpdateInfo?
+    public suspend fun getKnownBinaryHash(version: ProcessorVersion, blockHash: ByteArray? = null, timeout: Long? = null): ByteArray?
 
     public suspend fun submitExtrinsic(extrinsic: ByteArray, timeout: Long? = null): String?
     public suspend fun call(method: String, data: ByteArray? = null, blockHash: ByteArray? = null, timeout: Long? = null): String?
@@ -75,6 +83,51 @@ private class AcurastRpcImpl(
 
     override suspend fun getRuntimeVersion(blockHash: ByteArray?, timeout: Long?): RuntimeVersion =
         state.getRuntimeVersion(blockHash, timeout, engine)
+
+    override suspend fun getUpdateInfo(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): ProcessorUpdateInfo? {
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ProcessorUpdateInfo".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return ProcessorUpdateInfo.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    override suspend fun getKnownBinaryHash(
+        version: ProcessorVersion,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): ByteArray? {
+        val versionBytes = version.toU8a()
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "KnownBinaryHash".toByteArray().xxH128() +
+                    versionBytes.blake2b(128) + versionBytes
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine
+        )
+
+        return storage?.takeIf { it.isNotEmpty() }?.hexToBa()
+    }
 
     override suspend fun submitExtrinsic(extrinsic: ByteArray, timeout: Long?): String? =
         author.submitExtrinsic(extrinsic, timeout, engine)
