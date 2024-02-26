@@ -1,22 +1,48 @@
 package acurast.codec.extrinsic
 
+import acurast.codec.extensions.readByte
+import acurast.codec.extensions.readByteArray
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.ExtrinsicCall
 import acurast.codec.type.ToU8a
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MarketplaceAdvertisement
 import acurast.codec.type.marketplace.ExecutionResult
+import java.nio.ByteBuffer
 
 /**
  * An interface used to identify the public keys of multiple supported curves.
  */
 public sealed interface PublicKey: ToU8a {
+    public val bytes: ByteArray
+
+    public companion object {
+        public fun read(bytes: ByteBuffer): PublicKey {
+            val tag = Tag.read(bytes)
+            val value = bytes.readByteArray()
+
+            return when (tag) {
+                Tag.Secp256r1 -> Secp256r1(value)
+                Tag.Secp256k1 -> Secp256k1(value)
+                Tag.Ed25519 -> Ed25519(value)
+            }
+        }
+    }
+
     public enum class Tag(public val id: Byte) : ToU8a {
         Secp256r1(0),
         Secp256k1(1),
         Ed25519(2);
 
         override fun toU8a(): ByteArray = id.toU8a()
+
+        public companion object {
+            public fun read(bytes: ByteBuffer): Tag {
+                val value = bytes.readByte()
+
+                return entries.find { it.id == value } ?: throw RuntimeException("Unknown PublicKey tag ($value)")
+            }
+        }
     }
 
     private sealed interface Kind {
@@ -32,7 +58,7 @@ public sealed interface PublicKey: ToU8a {
         }
     }
 
-    public data class Secp256r1(val bytes: ByteArray) : PublicKey {
+    public data class Secp256r1(override val bytes: ByteArray) : PublicKey {
         public companion object : Kind {
             override val tag: Tag = Tag.Secp256r1
         }
@@ -40,7 +66,7 @@ public sealed interface PublicKey: ToU8a {
         override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
     }
 
-    public data class Secp256k1(val bytes: ByteArray): PublicKey {
+    public data class Secp256k1(override val bytes: ByteArray): PublicKey {
         public companion object : Kind {
             override val tag: Tag = Tag.Secp256k1
         }
@@ -48,7 +74,7 @@ public sealed interface PublicKey: ToU8a {
         override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
     }
 
-    public data class Ed25519(val bytes: ByteArray): PublicKey {
+    public data class Ed25519(override val bytes: ByteArray): PublicKey {
         public companion object : Kind {
             override val tag: Tag = Tag.Ed25519
         }
