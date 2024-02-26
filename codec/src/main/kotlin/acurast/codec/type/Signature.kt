@@ -16,7 +16,9 @@ public enum class CurveKind(public val id: Int) {
     Ed25519(0),
     Sr25519(1),
     Secp256k1(2),
-    Secp256r1(3)
+    Secp256r1(3),
+    P256WithAuthData(4),
+    Ed25519WithPrefix(5)
 }
 
 /**
