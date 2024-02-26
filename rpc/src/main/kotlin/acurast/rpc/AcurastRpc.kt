@@ -2,42 +2,74 @@ package acurast.rpc
 
 import acurast.codec.extensions.blake2b
 import acurast.codec.extensions.hexToBa
-import acurast.codec.extensions.toU8a
 import acurast.codec.extensions.xxH128
-import acurast.codec.type.ProcessorVersion
-import acurast.codec.type.acurast.JobEnvironment
-import acurast.codec.type.acurast.JobIdentifier
-import acurast.codec.type.acurast.JobRegistration
 import acurast.codec.type.manager.ProcessorUpdateInfo
-import acurast.codec.type.marketplace.JobAssignment
+import acurast.codec.type.manager.ProcessorVersion
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.Author
 import acurast.rpc.pallet.Chain
+import acurast.rpc.pallet.RuntimeVersion
 import acurast.rpc.pallet.State
-import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.PalletAssetsAssetAccount
-import acurast.rpc.type.readAccountInfo
-import acurast.rpc.type.readPalletAssetsAssetAccount
+import acurast.rpc.type.Header
+import acurast.rpc.type.UnsupportedApiVersion
+import acurast.rpc.versioned.storage.AcurastStorage
+import acurast.rpc.versioned.storage.v0.V0AcurastStorage
+import acurast.rpc.versioned.storage.v0.compat
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
-public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
-    public val author: Author = Author(defaultEngine)
-    public val chain: Chain = Chain(defaultEngine)
-    public val state: State = State(defaultEngine)
+public interface AcurastRpc {
+    public val engine: RpcEngine
 
-    /**
-     * Query account information. (nonce, etc...)
-     */
-    public suspend fun getAccountInfo(
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): FrameSystemAccountInfo {
+    public suspend fun getBlockHash(blockNumber: BigInteger? = null, timeout: Long? = null): String?
+    public suspend fun getHeader(blockHash: ByteArray? = null, timeout: Long? = null): Header
+
+    public suspend fun getApiVersion(blockHash: ByteArray? = null, timeout: Long? = null): UInt
+    public suspend fun getRuntimeVersion(blockHash: ByteArray? = null, timeout: Long? = null): RuntimeVersion
+
+    public suspend fun getUpdateInfo(accountId: ByteArray, blockHash: ByteArray? = null, timeout: Long? = null): ProcessorUpdateInfo?
+    public suspend fun getKnownBinaryHash(version: ProcessorVersion, blockHash: ByteArray? = null, timeout: Long? = null): ByteArray?
+
+    public suspend fun submitExtrinsic(extrinsic: ByteArray, timeout: Long? = null): String?
+    public suspend fun call(method: String, data: ByteArray? = null, blockHash: ByteArray? = null, timeout: Long? = null): String?
+
+    public fun storage(version: UInt): AcurastStorage
+}
+
+public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
+    val author = Author()
+    val chain = Chain()
+    val state = State()
+
+    return AcurastRpcImpl(
+        engine,
+        state,
+        author,
+        chain,
+        storages = listOf(
+            V0AcurastStorage(engine, state).compat(),
+        ).associateBy { it.version },
+    )
+}
+
+private class AcurastRpcImpl(
+    override val engine: RpcEngine,
+    private val state: State,
+    private val author: Author,
+    private val chain: Chain,
+    private val storages: Map<UInt, AcurastStorage>,
+) : AcurastRpc {
+
+    override suspend fun getBlockHash(blockNumber: BigInteger?, timeout: Long?): String? =
+        chain.getBlockHash(blockNumber, timeout, engine)
+
+    override suspend fun getHeader(blockHash: ByteArray?, timeout: Long?): Header =
+        chain.getHeader(blockHash, timeout, engine)
+
+    override suspend fun getApiVersion(blockHash: ByteArray?, timeout: Long?): UInt {
         val key =
-            "System".toByteArray().xxH128() +
-            "Account".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ApiVersion".toByteArray().xxH128()
 
         val storage = state.getStorage(
             storageKey = key,
@@ -46,176 +78,16 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
             engine,
         )
 
-        if (storage.isNullOrEmpty()) {
-            return FrameSystemAccountInfo()
-        }
-
-        return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
+        return storage?.toUIntOrNull() ?: 0u
     }
 
-    /**
-     * Query asset information for a given account.
-     */
-    public suspend fun getAccountAssetInfo(
-        assetId: Int,
+    override suspend fun getRuntimeVersion(blockHash: ByteArray?, timeout: Long?): RuntimeVersion =
+        state.getRuntimeVersion(blockHash, timeout, engine)
+
+    override suspend fun getUpdateInfo(
         accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): PalletAssetsAssetAccount? {
-        val assetIdBytes = assetId.toU8a();
-        val key =
-            "Assets".toByteArray().xxH128() +
-                    "Account".toByteArray().xxH128() +
-                    assetIdBytes.blake2b(128) + assetIdBytes +
-                    accountId.blake2b(128) + accountId
-
-        val storage = state.getStorage(
-            storageKey = key,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
-    }
-
-    /**
-     * Get the registration information of a given job.
-     */
-    public suspend fun getJobRegistration(
-        jobIdentifier: JobIdentifier,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): JobRegistration? {
-        val origin = jobIdentifier.origin.toU8a()
-        val jobId = jobIdentifier.id.toU8a()
-
-        val indexKey =
-            "Acurast".toByteArray().xxH128() + "StoredJobRegistration".toByteArray().xxH128() +
-                    origin.blake2b(128) + origin +
-                    jobId.blake2b(128) + jobId
-
-        val storage = state.getStorage(
-            storageKey = indexKey,
-            blockHash,
-            timeout,
-            engine
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
-    }
-
-    /**
-     * Get all job assignments for a given account.
-     */
-    public suspend fun getAssignedJobs(
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): List<JobAssignment> {
-        val jobs: MutableList<JobAssignment> = mutableListOf()
-
-        val indexKey =
-            "AcurastMarketplace".toByteArray().xxH128() +
-                    "StoredMatches".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
-        val keys = state.getKeys(
-            key = indexKey,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        val result = state.queryStorageAt(
-            storageKeys = keys,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (result.isNotEmpty()) {
-            for (change in result[0].changes) {
-                jobs.add(JobAssignment.read(change))
-            }
-        }
-
-        return jobs
-    }
-
-    /**
-     * Verify if the account is associated with an attested device.
-     */
-    public suspend fun isAttested(
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): Boolean {
-        val key =
-            "Acurast".toByteArray().xxH128() +
-                    "StoredAttestation".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
-        return try {
-            val result = state.getStorage(
-                storageKey = key,
-                blockHash,
-                timeout,
-                engine,
-            )
-
-            !result.isNullOrEmpty()
-        } catch (e: Throwable) {
-            false
-        }
-    }
-
-    public suspend fun getJobEnvironment(
-        jobIdentifier: JobIdentifier,
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
-    ): JobEnvironment? {
-        val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
-
-        val key =
-            "Acurast".toByteArray().xxH128() +
-                    "ExecutionEnvironment".toByteArray().xxH128() +
-                    jobId.blake2b(128) + jobId +
-                    accountId.blake2b(128) + accountId
-
-        val storage = state.getStorage(
-            storageKey = key,
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
-    }
-
-    public suspend fun getUpdateInfo(
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        blockHash: ByteArray?,
+        timeout: Long?,
     ): ProcessorUpdateInfo? {
         val key =
             "AcurastProcessorManager".toByteArray().xxH128() +
@@ -236,11 +108,10 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
         return ProcessorUpdateInfo.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 
-    public suspend fun getKnownBinaryHash(
+    override suspend fun getKnownBinaryHash(
         version: ProcessorVersion,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        blockHash: ByteArray?,
+        timeout: Long?,
     ): ByteArray? {
         val versionBytes = version.toU8a()
         val key =
@@ -257,4 +128,15 @@ public class AcurastRpc(override val defaultEngine: RpcEngine) : Rpc {
 
         return storage?.takeIf { it.isNotEmpty() }?.hexToBa()
     }
+
+    override suspend fun submitExtrinsic(extrinsic: ByteArray, timeout: Long?): String? =
+        author.submitExtrinsic(extrinsic, timeout, engine)
+
+    override suspend fun call(method: String, data: ByteArray?, blockHash: ByteArray?, timeout: Long?): String? =
+        state.call(method, data, blockHash, timeout, engine)
+
+    override fun storage(version: UInt): AcurastStorage = storages[version] ?: failWithUnsupportedApiVersion(version)
+
+    private fun failWithUnsupportedApiVersion(version: UInt): Nothing =
+        throw UnsupportedApiVersion(version)
 }

@@ -17,13 +17,13 @@ class ChainTest {
     @MockK
     private lateinit var rpcEngine: RpcEngine
 
-    private lateinit var acurastRpc: AcurastRpc
+    private lateinit var chain: Chain
 
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        acurastRpc = AcurastRpc(rpcEngine)
+        chain = Chain()
     }
 
     @After
@@ -48,7 +48,7 @@ class ChainTest {
         coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
-            acurastRpc.chain.getBlockHash()
+            chain.getBlockHash(engine = rpcEngine)
         }
 
         assertEquals(expectedResponse, response)

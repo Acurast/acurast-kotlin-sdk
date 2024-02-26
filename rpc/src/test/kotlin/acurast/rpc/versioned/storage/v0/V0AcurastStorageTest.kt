@@ -1,4 +1,4 @@
-package acurast.rpc
+package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
@@ -6,6 +6,7 @@ import acurast.codec.type.AccountId32
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MultiOrigin
 import acurast.rpc.engine.RpcEngine
+import acurast.rpc.pallet.State
 import acurast.rpc.type.FrameSystemAccountInfo
 import acurast.rpc.type.PalletAssetsAssetAccount
 import io.mockk.*
@@ -21,16 +22,16 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import java.math.BigInteger
 import kotlin.test.assertEquals
 
-class AcurastRpcTest {
+class V0AcurastStorageTest {
     @MockK
     private lateinit var rpcEngine: RpcEngine
 
-    private lateinit var acurastRpc: AcurastRpc
+    private lateinit var acurastStorage: V0AcurastStorage
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        acurastRpc = AcurastRpc(rpcEngine)
+        acurastStorage = V0AcurastStorage(rpcEngine, State())
     }
 
     @After
@@ -57,7 +58,7 @@ class AcurastRpcTest {
         coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
-            acurastRpc.isAttested(account.hexToBa())
+            acurastStorage.isAttested(account.hexToBa())
         }
 
         assertTrue(response)
@@ -97,7 +98,7 @@ class AcurastRpcTest {
         coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
-            acurastRpc.getAccountInfo(account.hexToBa())
+            acurastStorage.getAccountInfo(account.hexToBa())
         }
 
         assertEquals(expectedResponse, response)
@@ -131,7 +132,7 @@ class AcurastRpcTest {
         coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
 
         val response = runBlocking {
-            acurastRpc.getAccountAssetInfo(assetId, account.hexToBa())
+            acurastStorage.getAccountAssetInfo(assetId, account.hexToBa())
         }
 
         assertEquals(expectedResponse, response)
@@ -201,7 +202,7 @@ class AcurastRpcTest {
        } returns queryStorageResponse
 
         val response = runBlocking {
-            acurastRpc.getAssignedJobs(account.hexToBa())
+            acurastStorage.getAssignedJobs(account.hexToBa())
         }
 
         assertEquals(2, response.size)
@@ -269,7 +270,7 @@ class AcurastRpcTest {
         } returns queryStorageResponse
 
         val response = runBlocking {
-            acurastRpc.getAssignedJobs(account.hexToBa())
+            acurastStorage.getAssignedJobs(account.hexToBa())
         }
 
         assertEquals(1, response.size)
@@ -343,7 +344,7 @@ class AcurastRpcTest {
         } returns queryStorageResponse
 
         val response = runBlocking {
-            acurastRpc.getAssignedJobs(account.hexToBa())
+            acurastStorage.getAssignedJobs(account.hexToBa())
         }
 
         assertEquals(2, response.size)
@@ -379,7 +380,7 @@ class AcurastRpcTest {
         } returns jsonResponse
 
         val response = runBlocking {
-            acurastRpc.getJobRegistration(JobIdentifier(MultiOrigin.Acurast(AccountId32(account.hexToBa())), BigInteger.ONE))
+            acurastStorage.getJobRegistration(JobIdentifier(MultiOrigin.Acurast(AccountId32(account.hexToBa())), BigInteger.ONE))
         }
 
         assertEquals(script, response?.script?.toHex())

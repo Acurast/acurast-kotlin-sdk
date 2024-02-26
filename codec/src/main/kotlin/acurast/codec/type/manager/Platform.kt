@@ -1,4 +1,4 @@
-package acurast.codec.type
+package acurast.codec.type.manager
 
 import java.nio.ByteBuffer
 

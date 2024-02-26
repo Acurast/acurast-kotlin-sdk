@@ -1,7 +1,7 @@
 package acurast.rpc.pallet
 
 import acurast.codec.extensions.toHex
-import acurast.rpc.JsonRpc
+import acurast.rpc.utils.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
 import acurast.rpc.type.Header
@@ -9,14 +9,14 @@ import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import java.math.BigInteger
 
-public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
+public class Chain : PalletRpc() {
     /**
      * Query the hash of a block at a given height.
      */
     public suspend fun getBlockHash(
         blockNumber: BigInteger? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): String? {
         val params = JSONArray().apply {
             // Add block number if provided
@@ -34,7 +34,7 @@ public class Chain(defaultEngine: RpcEngine) : PalletRpc(defaultEngine) {
     public suspend fun getHeader(
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-        engine: RpcEngine = defaultEngine,
+        engine: RpcEngine,
     ): Header {
         val params = JSONArray().apply {
             // Add block hash if provided, otherwise the head block will be queried.
