@@ -1,6 +1,7 @@
 package acurast.codec.type.marketplace
 
 import acurast.codec.extensions.*
+import acurast.codec.extrinsic.PublicKey
 import acurast.codec.type.*
 import acurast.codec.type.acurast.JobIdentifier
 import java.nio.ByteBuffer
@@ -15,7 +16,8 @@ public data class JobAssignment(
     public val startDelay: Long,
     public val feePerExecution: UInt128,
     public val acknowledged: Boolean,
-    public val sla: SLA
+    public val sla: SLA,
+    public val publicKeys: List<PublicKey>,
 ) {
     public companion object {
         public fun read(l: List<String>): JobAssignment {
@@ -27,14 +29,22 @@ public data class JobAssignment(
 
             val value = ByteBuffer.wrap(l[1].hexToBa())
 
+            val slot = value.readByte().toInt()
+            val startDelay = value.long
+            val feePerExecution = UInt128(value.readU128())
+            val acknowledged = value.readBoolean()
+            val sla = SLA.read(value)
+            val publicKeys = value.readList { PublicKey.read(this) }
+
             return JobAssignment(
                 processor,
                 jobId = jobId,
-                slot = value.readByte().toInt(),
-                startDelay = value.long,
-                feePerExecution = UInt128(value.readU128()),
-                acknowledged = value.readBoolean(),
-                sla = SLA.read(value)
+                slot,
+                startDelay,
+                feePerExecution,
+                acknowledged,
+                sla,
+                publicKeys,
             )
         }
     }
