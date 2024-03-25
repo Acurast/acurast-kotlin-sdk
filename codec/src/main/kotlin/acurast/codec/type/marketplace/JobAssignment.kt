@@ -4,6 +4,8 @@ import acurast.codec.extensions.*
 import acurast.codec.extrinsic.PublicKey
 import acurast.codec.type.*
 import acurast.codec.type.acurast.JobIdentifier
+import java.io.UnsupportedEncodingException
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
 /**
@@ -18,9 +20,10 @@ public data class JobAssignment(
     public val acknowledged: Boolean,
     public val sla: SLA,
     public val publicKeys: List<PublicKey>,
+    public val executionSpecifier: ExecutionSpecifier,
 ) {
     public companion object {
-        public fun read(l: List<String>): JobAssignment {
+        public fun read(l: List<String>, apiVersion: UInt): JobAssignment {
             val key = ByteBuffer.wrap(l[0].hexToBa())
             key.readBytes(48); // Skip <pallet_name>, <method_name>, <processor_hash>
             val processor = key.readAccountId32()
@@ -36,6 +39,9 @@ public data class JobAssignment(
             val sla = SLA.read(value)
             val publicKeys = value.readList { PublicKey.read(this) }
 
+            val executionSpecifier = if (apiVersion > 0u)
+                 ExecutionSpecifier.read(value) else ExecutionSpecifier(ExecutionSpecifierKind.All)
+
             return JobAssignment(
                 processor,
                 jobId = jobId,
@@ -45,6 +51,7 @@ public data class JobAssignment(
                 acknowledged,
                 sla,
                 publicKeys,
+                executionSpecifier
             )
         }
     }
@@ -63,6 +70,45 @@ public data class SLA(
                 buffer.long,
                 buffer.long
             )
+        }
+    }
+}
+
+/**
+ * Specifier of execution(s) to be assigned in a `JobAssignment`.
+ */
+public enum class ExecutionSpecifierKind(public val id: Byte) : ToU8a {
+    All(0),
+    Index(1);
+
+    override fun toU8a(): ByteArray = this.id.toU8a()
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): ExecutionSpecifierKind {
+            return when (val id = buffer.readByte()) {
+                All.id -> All
+                Index.id -> Index
+                else -> throw UnsupportedEncodingException("Unknown ExecutionSpecifier $id.")
+            }
+        }
+    }
+}
+
+public data class ExecutionSpecifier(
+    public val kind: ExecutionSpecifierKind,
+    public val index: BigInteger? = null,
+) {
+    public companion object {
+        public fun read(buffer: ByteBuffer): ExecutionSpecifier {
+            return when(ExecutionSpecifierKind.read(buffer)) {
+                ExecutionSpecifierKind.All -> ExecutionSpecifier(
+                    kind = ExecutionSpecifierKind.All,
+                )
+                ExecutionSpecifierKind.Index -> ExecutionSpecifier(
+                    kind = ExecutionSpecifierKind.Index,
+                    index = buffer.readCompactInteger()
+                )
+            }
         }
     }
 }

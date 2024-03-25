@@ -1,7 +1,7 @@
 package acurast.rpc.versioned.storage
 
-import acurast.rpc.versioned.storage.v0.V0AcurastStorage
+import acurast.rpc.versioned.storage.v1.V1AcurastStorage
 
-public typealias LatestAcurastStorage = V0AcurastStorage
+public typealias LatestAcurastStorage = V1AcurastStorage
 
 public interface AcurastStorage : VersionedAcurastStorage, LatestAcurastStorage

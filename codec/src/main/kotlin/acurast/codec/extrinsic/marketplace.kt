@@ -88,6 +88,7 @@ public sealed interface PublicKey: ToU8a {
  *
  * @param callIndex The "acknowledgeMatch" call index (pallet index + call index).
  * @param jobId The identifier of the job being acknowledged.
+ * @param publicKeys The publicKeys that should be used to encrypt env variables.
  */
 public data class AcknowledgeMatchCall(
     val callIndex: ByteArray,
@@ -97,6 +98,26 @@ public data class AcknowledgeMatchCall(
 
     override fun toU8a(): ByteArray {
         return callIndex + jobId.toU8a() + publicKeys.toU8a(withSize = true)
+    }
+}
+
+/**
+ * Extrinsic method call 'acknowledgeExecutionMatch'.
+ *
+ * @param callIndex The "acknowledgeExecutionMatch" call index (pallet index + call index).
+ * @param jobId The identifier of the job being acknowledged.
+ * @param executionIndex The execution index to acknwoledge in a competing fashion.
+ * @param publicKeys The publicKeys that should be used to encrypt env variables.
+ */
+public data class AcknowledgeExecutionMatchCall(
+    val callIndex: ByteArray,
+    val jobId: JobIdentifier,
+    val executionIndex: UInt,
+    val publicKeys: List<PublicKey>
+): ExtrinsicCall {
+
+    override fun toU8a(): ByteArray {
+        return callIndex + jobId.toU8a() + executionIndex.toLong().toU8a() + publicKeys.toU8a(withSize = true)
     }
 }
 
