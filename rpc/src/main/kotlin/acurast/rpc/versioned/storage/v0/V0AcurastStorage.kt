@@ -1,12 +1,11 @@
 package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.*
-import acurast.codec.type.manager.ProcessorVersion
 import acurast.codec.type.acurast.JobEnvironment
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.JobRegistration
-import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
+import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
 import acurast.rpc.versioned.storage.VersionedAcurastStorage
@@ -75,6 +74,8 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): JobEnvironment?
+
+    public suspend fun getAsset(managerId: Int, blockHash: ByteArray? = null, timeout: Long? = null): PalletUniquesItemDetails?
 
     public companion object {
         public const val VERSION: UInt = 0u
@@ -273,5 +274,29 @@ private class V0AcurastStorageImpl(private val engine: RpcEngine, private val st
         }
 
         return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    override suspend fun getAsset(managerId: Int, blockHash: ByteArray?, timeout: Long?): PalletUniquesItemDetails? {
+        val collectionId = (0).toBigInteger().toU8a()
+        val managerId = managerId.toBigInteger().toU8a()
+
+        val key =
+            "Uniques".toByteArray().xxH128() +
+                    "Asset".toByteArray().xxH128() +
+                    collectionId.blake2b(128) + collectionId +
+                    managerId.blake2b(128) + managerId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return PalletUniquesItemDetails.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 }
