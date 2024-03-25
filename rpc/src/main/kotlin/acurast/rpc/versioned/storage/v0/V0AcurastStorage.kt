@@ -84,7 +84,7 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
 
 internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
 
-private class V0AcurastStorageImpl(private val engine: RpcEngine, private val state: State) : V0AcurastStorage {
+ class V0AcurastStorageImpl(private val engine: RpcEngine, private val state: State) : V0AcurastStorage {
     override val version: UInt = V0AcurastStorage.VERSION
 
     override suspend fun getAccountInfo(
@@ -186,7 +186,7 @@ private class V0AcurastStorageImpl(private val engine: RpcEngine, private val st
             return null
         }
 
-        return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()))
+        return JobRegistration.read(ByteBuffer.wrap(storage.hexToBa()), version)
     }
 
     override suspend fun getAssignedJobs(
@@ -217,7 +217,7 @@ private class V0AcurastStorageImpl(private val engine: RpcEngine, private val st
 
         if (result.isNotEmpty()) {
             for (change in result[0].changes) {
-                jobs.add(JobAssignment.read(change))
+                jobs.add(JobAssignment.read(change, version))
             }
         }
 

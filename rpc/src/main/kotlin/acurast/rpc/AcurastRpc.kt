@@ -15,6 +15,7 @@ import acurast.rpc.type.UnsupportedApiVersion
 import acurast.rpc.versioned.storage.AcurastStorage
 import acurast.rpc.versioned.storage.v0.V0AcurastStorage
 import acurast.rpc.versioned.storage.v0.compat
+import acurast.rpc.versioned.storage.v1.V1AcurastStorage
 import java.math.BigInteger
 import java.nio.ByteBuffer
 
@@ -48,6 +49,7 @@ public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
         chain,
         storages = listOf(
             V0AcurastStorage(engine, state).compat(),
+            V1AcurastStorage(engine, state).compat(),
         ).associateBy { it.version },
     )
 }

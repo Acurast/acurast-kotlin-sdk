@@ -2,6 +2,7 @@ package acurast.codec.type.acurast
 
 import acurast.codec.extensions.*
 import acurast.codec.type.*
+import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
 
 /**
@@ -25,10 +26,10 @@ public data class JobRegistration(
     //
     public val requiredModules: List<JobModule>,
     // Extra parameters.
-    public val extra: ByteArray
+    public val extra: JobRegistrationExtra,
 ) {
     public companion object {
-        public fun read(value: ByteBuffer): JobRegistration {
+        public fun read(value: ByteBuffer, apiVersion: UInt): JobRegistration {
             val script = value.readByteArray()
             val allowedSources = value.readOptional { readList { readAccountId32() } }
             val allowOnlyVerifiedSources = value.readBoolean()
@@ -37,7 +38,10 @@ public data class JobRegistration(
             val networkRequests = value.int
             val storage = value.int
             val requiredModules = value.readList { JobModule.read(this) }
-            val extra = byteArrayOf() // TODO
+            val extra =
+                if (apiVersion > 0u) JobRegistrationExtra.read(value) else JobRegistrationExtra(
+                    JobRequirements(AssignmentStrategy.Single)
+                )
 
             return JobRegistration(
                 script,
@@ -90,3 +94,56 @@ public data class JobSchedule(
         }
     }
 }
+
+
+/**
+ * The structure of a extra field in JobRegistration.
+ */
+public data class JobRegistrationExtra(
+    public val requirements: JobRequirements,
+) {
+    public companion object {
+        public fun read(buffer: ByteBuffer): JobRegistrationExtra {
+            return JobRegistrationExtra(JobRequirements.read(buffer))
+        }
+    }
+}
+
+
+/**
+ * The structure of a AssignmentStrategy.
+ */
+public data class JobRequirements(
+    public val assignmentStrategy: AssignmentStrategy,
+) {
+    public companion object {
+        public fun read(buffer: ByteBuffer): JobRequirements {
+            return JobRequirements(
+                AssignmentStrategy.read(buffer)
+                // ignore subsequent fields for now
+            )
+        }
+    }
+}
+
+/**
+ * Specifier of execution(s) to be assigned in a `JobAssignment`.
+ */
+public enum class AssignmentStrategy(public val id: Byte) : ToU8a {
+    Single(0),
+    Competing(1);
+
+    override fun toU8a(): ByteArray = this.id.toU8a()
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): AssignmentStrategy {
+            return when (val id = buffer.readByte()) {
+                Single.id -> Single
+                Competing.id -> Competing
+                else -> throw UnsupportedEncodingException("Unknown AssignmentStrategy $id.")
+            }
+        }
+    }
+}
+
+
