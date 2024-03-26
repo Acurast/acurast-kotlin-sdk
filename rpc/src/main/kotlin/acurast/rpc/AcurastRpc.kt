@@ -2,6 +2,7 @@ package acurast.rpc
 
 import acurast.codec.extensions.blake2b
 import acurast.codec.extensions.hexToBa
+import acurast.codec.extensions.readU32
 import acurast.codec.extensions.xxH128
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.manager.ProcessorVersion
@@ -14,7 +15,8 @@ import acurast.rpc.type.Header
 import acurast.rpc.type.UnsupportedApiVersion
 import acurast.rpc.versioned.storage.AcurastStorage
 import acurast.rpc.versioned.storage.v0.V0AcurastStorage
-import acurast.rpc.versioned.storage.v0.compat
+import acurast.rpc.versioned.storage.v0.compatV0
+import acurast.rpc.versioned.storage.v1.compatV1
 import acurast.rpc.versioned.storage.v1.V1AcurastStorage
 import java.math.BigInteger
 import java.nio.ByteBuffer
@@ -48,8 +50,8 @@ public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
         author,
         chain,
         storages = listOf(
-            V0AcurastStorage(engine, state).compat(),
-            V1AcurastStorage(engine, state).compat(),
+//            V0AcurastStorage(engine, state).compatV0(),
+            V1AcurastStorage(engine, state).compatV1(),
         ).associateBy { it.version },
     )
 }
@@ -80,7 +82,7 @@ private class AcurastRpcImpl(
             engine,
         )
 
-        return storage?.toUIntOrNull() ?: 0u
+        return storage?.let { ByteBuffer.wrap(it.hexToBa()).readU32() } ?: 0u
     }
 
     override suspend fun getRuntimeVersion(blockHash: ByteArray?, timeout: Long?): RuntimeVersion =
