@@ -13,6 +13,6 @@ public interface V1AcurastStorage : V0AcurastStorage {
 
 internal fun V1AcurastStorage(engine: RpcEngine, state: State): V1AcurastStorage = V1AcurastStorageImpl(engine, state)
 
-private class V1AcurastStorageImpl(engine: RpcEngine, state: State) : V1AcurastStorage , V0AcurastStorage by V0AcurastStorage(engine, state) {
+private class V1AcurastStorageImpl(engine: RpcEngine, state: State) : V1AcurastStorage, V0AcurastStorageImpl(engine, state) {
     override val version: UInt = V1AcurastStorage.VERSION
 }

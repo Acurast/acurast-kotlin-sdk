@@ -84,7 +84,7 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
 
 internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
 
- class V0AcurastStorageImpl(private val engine: RpcEngine, private val state: State) : V0AcurastStorage {
+internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private val state: State) : V0AcurastStorage {
     override val version: UInt = V0AcurastStorage.VERSION
 
     override suspend fun getAccountInfo(

@@ -8,4 +8,4 @@ private class V0CompatAcurastStorageImpl(v0: V0AcurastStorage) : V0CompatAcurast
     /* Forwards Compatibility */
 }
 
-internal fun V0AcurastStorage.compat(): V0CompatAcurastStorage = V0CompatAcurastStorageImpl(this)
+internal fun V0AcurastStorage.compatV0(): V0CompatAcurastStorage = V0CompatAcurastStorageImpl(this)
