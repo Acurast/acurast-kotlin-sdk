@@ -50,7 +50,7 @@ public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
         author,
         chain,
         storages = listOf(
-//            V0AcurastStorage(engine, state).compatV0(),
+            V0AcurastStorage(engine, state).compatV0(),
             V1AcurastStorage(engine, state).compatV1(),
         ).associateBy { it.version },
     )
