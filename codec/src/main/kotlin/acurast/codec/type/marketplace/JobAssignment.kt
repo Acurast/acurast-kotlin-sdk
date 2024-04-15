@@ -96,7 +96,7 @@ public enum class ExecutionSpecifierKind(public val id: Byte) : ToU8a {
 
 public data class ExecutionSpecifier(
     public val kind: ExecutionSpecifierKind,
-    public val index: BigInteger? = null,
+    public val index: ULong? = null,
 ) {
     public companion object {
         public fun read(buffer: ByteBuffer): ExecutionSpecifier {
@@ -104,10 +104,12 @@ public data class ExecutionSpecifier(
                 ExecutionSpecifierKind.All -> ExecutionSpecifier(
                     kind = ExecutionSpecifierKind.All,
                 )
-                ExecutionSpecifierKind.Index -> ExecutionSpecifier(
-                    kind = ExecutionSpecifierKind.Index,
-                    index = buffer.readCompactInteger()
-                )
+                ExecutionSpecifierKind.Index -> {
+                    ExecutionSpecifier(
+                        kind = ExecutionSpecifierKind.Index,
+                        index = buffer.readU64()
+                    )
+                }
             }
         }
     }
