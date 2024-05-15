@@ -41,7 +41,7 @@ public sealed interface Result<O, E> : ToU8a {
             override val tag: Tag = Tag.Ok
         }
 
-        override fun toU8a(): ByteArray = Err.tag.toU8a() + when (inner) {
+        override fun toU8a(): ByteArray = tag.toU8a() + when (inner) {
             is ByteArray -> inner.toU8a()
             is ToU8a -> inner.toU8a()
             is List<*> -> tryCast<List<ToU8a>>(inner).toU8a()
