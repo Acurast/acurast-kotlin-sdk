@@ -18,9 +18,9 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.Assertions.assertTrue
 import java.math.BigInteger
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class V0AcurastStorageTest {
     @MockK
