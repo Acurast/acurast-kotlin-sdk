@@ -1,9 +1,7 @@
 package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.*
-import acurast.codec.type.acurast.JobEnvironment
-import acurast.codec.type.acurast.JobIdentifier
-import acurast.codec.type.acurast.JobRegistration
+import acurast.codec.type.acurast.*
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.engine.RpcEngine
@@ -76,6 +74,18 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
     ): JobEnvironment?
 
     public suspend fun getAsset(managerId: Int, blockHash: ByteArray? = null, timeout: Long? = null): PalletUniquesItemDetails?
+
+    public suspend fun getMarketplacePricing(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): MarketplacePricing?
+
+    public suspend fun getMarketplaceAdvertisementRestriction(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): MarketplaceAdvertisementRestriction?
 
     public companion object {
         public const val VERSION: UInt = 0u
@@ -298,5 +308,53 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }
 
         return PalletUniquesItemDetails.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    override suspend fun getMarketplacePricing(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): MarketplacePricing? {
+        val key =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredAdvertisementPricing".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return MarketplacePricing.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    override suspend fun getMarketplaceAdvertisementRestriction(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): MarketplaceAdvertisementRestriction? {
+        val key =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredAdvertisementRestriction".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return MarketplaceAdvertisementRestriction.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 }

@@ -1,7 +1,6 @@
 package acurast.codec.type.acurast
 
-import acurast.codec.extensions.readByte
-import acurast.codec.extensions.toU8a
+import acurast.codec.extensions.*
 import acurast.codec.type.*
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
@@ -11,20 +10,10 @@ import java.nio.ByteBuffer
  */
 public data class MarketplaceAdvertisement(
     public val pricing: MarketplacePricing,
-    public val maxMemory: Int,
-    public val networkRequestQuota: Byte,
-    public val storageCapacity: Int,
-    public val allowedConsumers: Option<List<MultiOrigin>>,
-    public val availableModules: List<JobModule> = emptyList(),
+    public val restriction: MarketplaceAdvertisementRestriction,
 ) : ToU8a {
     override fun toU8a(): ByteArray {
-        return pricing.toU8a() +
-                maxMemory.toU8a() +
-                networkRequestQuota.toU8a() +
-                storageCapacity.toU8a() +
-                allowedConsumers.toU8a() +
-                availableModules.toU8a(withSize = true)
-
+        return pricing.toU8a() + restriction.toU8a()
     }
 }
 
@@ -50,7 +39,7 @@ public enum class JobModule(public val id: Byte) : ToU8a {
 /**
  * The structure of the pricing accepted by the data processor.
  */
-public data class MarketplacePricing constructor(
+public data class MarketplacePricing(
     public val feePerMillisecond: UInt128,
     public val feePerStorageByte: UInt128,
     public val baseFeePerExecution: UInt128,
@@ -61,6 +50,56 @@ public data class MarketplacePricing constructor(
                 feePerStorageByte.toU8a() +
                 baseFeePerExecution.toU8a() +
                 schedulingWindow.toU8a()
+    }
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): MarketplacePricing {
+            val feePerMillisecond = buffer.readU128()
+            val feePerStorageByte = buffer.readU128()
+            val baseFeePerExecution = buffer.readU128()
+            val schedulingWindow = SchedulingWindow.read(buffer)
+
+            return MarketplacePricing(
+                UInt128(feePerMillisecond),
+                UInt128(feePerStorageByte),
+                UInt128(baseFeePerExecution),
+                schedulingWindow,
+            )
+        }
+    }
+}
+
+public data class MarketplaceAdvertisementRestriction(
+    public val maxMemory: Int,
+    public val networkRequestQuota: Byte,
+    public val storageCapacity: Int,
+    public val allowedConsumers: Option<List<MultiOrigin>>,
+    public val availableModules: List<JobModule> = emptyList(),
+) : ToU8a {
+    override fun toU8a(): ByteArray {
+        return maxMemory.toU8a() +
+                networkRequestQuota.toU8a() +
+                storageCapacity.toU8a() +
+                allowedConsumers.toU8a() +
+                availableModules.toU8a(withSize = true)
+    }
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): MarketplaceAdvertisementRestriction {
+            val maxMemory = buffer.readU32()
+            val networkRequestQuota = buffer.readU8()
+            val storageCapacity = buffer.readU32()
+            val allowedConsumers = buffer.readOptional { readList { MultiOrigin.read(this@readList) } }
+            val availableModules = buffer.readList { JobModule.read(this) }
+
+            return MarketplaceAdvertisementRestriction(
+                maxMemory.toInt(),
+                networkRequestQuota.toByte(),
+                storageCapacity.toInt(),
+                allowedConsumers?.let { Option.some(it) } ?: Option.none(),
+                availableModules,
+            )
+        }
     }
 }
 
@@ -77,5 +116,14 @@ public data class SchedulingWindow(public val kind: Kind, public val time: UInt6
 
     override fun toU8a(): ByteArray {
         return kind.id.toByte().toU8a() + time.toU8a()
+    }
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): SchedulingWindow {
+            val kind = Kind.entries.first { it.id == buffer.readU8().toInt() }
+            val time = buffer.readU64()
+
+            return SchedulingWindow(kind, UInt64(time.toLong()))
+        }
     }
 }
