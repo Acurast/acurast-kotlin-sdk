@@ -318,7 +318,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val key =
             "AcurastMarketplace".toByteArray().xxH128() +
                     "StoredAdvertisementPricing".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
+                    accountId.blake2b(128)
 
         val storage = state.getStorage(
             storageKey = key,
@@ -342,7 +342,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val key =
             "AcurastMarketplace".toByteArray().xxH128() +
                     "StoredAdvertisementRestriction".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
+                    accountId.blake2b(128)
 
         val storage = state.getStorage(
             storageKey = key,
