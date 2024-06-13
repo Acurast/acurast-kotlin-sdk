@@ -8,11 +8,11 @@ import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
-import acurast.rpc.versioned.storage.VersionedAcurastStorage
 import acurast.rpc.type.FrameSystemAccountInfo
 import acurast.rpc.type.PalletAssetsAssetAccount
 import acurast.rpc.type.readAccountInfo
 import acurast.rpc.type.readPalletAssetsAssetAccount
+import acurast.rpc.versioned.storage.VersionedAcurastStorage
 import java.nio.ByteBuffer
 
 public interface V0AcurastStorage : VersionedAcurastStorage {
@@ -40,6 +40,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): Int?
+
+    public suspend fun getManagerCounter(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): ULong?
 
     /**
      * Get the registration information of a given job.
@@ -160,6 +166,30 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }
 
         return ByteBuffer.wrap(storage.hexToBa()).readU128().toInt()
+    }
+
+    override suspend fun getManagerCounter(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): ULong? {
+        val key =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ManagerCounter".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        val storage = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return ByteBuffer.wrap(storage.hexToBa()).readU64()
     }
 
     override suspend fun getJobRegistration(
