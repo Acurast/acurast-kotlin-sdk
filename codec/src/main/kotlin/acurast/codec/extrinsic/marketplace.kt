@@ -25,6 +25,8 @@ public sealed interface PublicKey: ToU8a {
                 Tag.Secp256r1 -> Secp256r1(value)
                 Tag.Secp256k1 -> Secp256k1(value)
                 Tag.Ed25519 -> Ed25519(value)
+                Tag.Secp256r1Encryption -> Secp256r1Encryption(value)
+                Tag.Secp256k1Encryption -> Secp256k1Encryption(value)
             }
         }
     }
@@ -32,7 +34,9 @@ public sealed interface PublicKey: ToU8a {
     public enum class Tag(public val id: Byte) : ToU8a {
         Secp256r1(0),
         Secp256k1(1),
-        Ed25519(2);
+        Ed25519(2),
+        Secp256r1Encryption(3),
+        Secp256k1Encryption(4);
 
         override fun toU8a(): ByteArray = id.toU8a()
 
@@ -77,6 +81,22 @@ public sealed interface PublicKey: ToU8a {
     public data class Ed25519(override val bytes: ByteArray): PublicKey {
         public companion object : Kind {
             override val tag: Tag = Tag.Ed25519
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
+    }
+
+    public data class Secp256r1Encryption(override val bytes: ByteArray) : PublicKey {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Secp256r1Encryption
+        }
+
+        override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()
+    }
+
+    public data class Secp256k1Encryption(override val bytes: ByteArray): PublicKey {
+        public companion object : Kind {
+            override val tag: Tag = Tag.Secp256k1Encryption
         }
 
         override fun toU8a(): ByteArray = tag.toU8a() + bytes.toU8a()

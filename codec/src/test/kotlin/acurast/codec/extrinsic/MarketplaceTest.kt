@@ -31,11 +31,13 @@ class MarketplaceTest {
                 baseFeePerExecution = UInt128(BigInteger.ONE),
                 schedulingWindow = SchedulingWindow(SchedulingWindow.Kind.End, UInt64(10000))
             ),
-            maxMemory = 1,
-            networkRequestQuota = 2,
-            storageCapacity = 3,
-            allowedConsumers = Option.some(listOf(MultiOrigin.Acurast(AccountId32("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())))),
-            availableModules = listOf(JobModule.DataEncryption)
+            restriction = MarketplaceAdvertisementRestriction(
+                maxMemory = 1,
+                networkRequestQuota = 2,
+                storageCapacity = 3,
+                allowedConsumers = Option.some(listOf(MultiOrigin.Acurast(AccountId32("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())))),
+                availableModules = listOf(JobModule.DataEncryption)
+            ),
         )
         val call = AdvertiseCall(byteArrayOf(0x2b, 0x00), advertisement)
         val expected = "2b00010000000000000000000000000000000100000000000000000000000000000001000000000000000000000000000000001027000000000000010000000203000000010400d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0400"
