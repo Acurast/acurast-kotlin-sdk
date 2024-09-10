@@ -36,7 +36,8 @@ class MarketplaceTest {
                 networkRequestQuota = 2,
                 storageCapacity = 3,
                 allowedConsumers = Option.some(listOf(MultiOrigin.Acurast(AccountId32("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())))),
-                availableModules = listOf(JobModule.DataEncryption)
+                availableModules = listOf(JobModule.DataEncryption),
+                cpuScore = UInt128(BigInteger.ZERO)
             ),
         )
         val call = AdvertiseCall(byteArrayOf(0x2b, 0x00), advertisement)
