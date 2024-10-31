@@ -75,15 +75,13 @@ public data class MarketplaceAdvertisementRestriction(
     public val storageCapacity: Int,
     public val allowedConsumers: Option<List<MultiOrigin>>,
     public val availableModules: List<JobModule> = emptyList(),
-    public val cpuScore: UInt128,
 ) : ToU8a {
     override fun toU8a(): ByteArray {
         return maxMemory.toU8a() +
                 networkRequestQuota.toU8a() +
                 storageCapacity.toU8a() +
                 allowedConsumers.toU8a() +
-                availableModules.toU8a(withSize = true) +
-                cpuScore.toU8a()
+                availableModules.toU8a(withSize = true)
     }
 
     public companion object {
@@ -93,7 +91,6 @@ public data class MarketplaceAdvertisementRestriction(
             val storageCapacity = buffer.readU32()
             val allowedConsumers = buffer.readOptional { readList { MultiOrigin.read(this@readList) } }
             val availableModules = buffer.readList { JobModule.read(this) }
-            val cpuScore = buffer.readU128()
 
             return MarketplaceAdvertisementRestriction(
                 maxMemory.toInt(),
@@ -101,7 +98,6 @@ public data class MarketplaceAdvertisementRestriction(
                 storageCapacity.toInt(),
                 allowedConsumers?.let { Option.some(it) } ?: Option.none(),
                 availableModules,
-                UInt128(cpuScore)
             )
         }
     }
