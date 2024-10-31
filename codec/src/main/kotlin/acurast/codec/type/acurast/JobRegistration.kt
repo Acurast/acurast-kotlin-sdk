@@ -3,6 +3,7 @@ package acurast.codec.type.acurast
 import acurast.codec.extensions.*
 import acurast.codec.type.*
 import java.io.UnsupportedEncodingException
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
 /**
@@ -40,7 +41,14 @@ public data class JobRegistration(
             val requiredModules = value.readList { JobModule.read(this) }
             val extra =
                 if (apiVersion > 0u) JobRegistrationExtra.read(value) else JobRegistrationExtra(
-                    JobRequirements(AssignmentStrategy.Single)
+                    JobRequirements(
+                        AssignmentStrategy.Single(),
+                        0,
+                        BigInteger.ZERO,
+                        null,
+                        null,
+                        Runtime.NodeJS,
+                    )
                 )
 
             return JobRegistration(
@@ -115,12 +123,28 @@ public data class JobRegistrationExtra(
  */
 public data class JobRequirements(
     public val assignmentStrategy: AssignmentStrategy,
+    public val slots: Byte,
+    public val reward: BigInteger,
+    public val minReputation: BigInteger?,
+    public val processorVersion: ProcessorVersionRequirements?,
+    public val runtime: Runtime,
 ) {
     public companion object {
         public fun read(buffer: ByteBuffer): JobRequirements {
+            val assignmentStrategy = AssignmentStrategy.read(buffer)
+            val slots = buffer.readByte()
+            val reward = buffer.readU128()
+            val minReputation = buffer.readOptional { readU128() }
+            val processorVersion = buffer.readOptional { ProcessorVersionRequirements.read(this) }
+            val runtime = Runtime.read(buffer)
+
             return JobRequirements(
-                AssignmentStrategy.read(buffer)
-                // ignore subsequent fields for now
+                assignmentStrategy,
+                slots,
+                reward,
+                minReputation,
+                processorVersion,
+                runtime,
             )
         }
     }
@@ -129,21 +153,84 @@ public data class JobRequirements(
 /**
  * Specifier of execution(s) to be assigned in a `JobAssignment`.
  */
-public enum class AssignmentStrategy(public val id: Byte) : ToU8a {
-    Single(0),
-    Competing(1);
+public sealed interface AssignmentStrategy : ToU8a {
+    public val id: Byte
+
+    public data class Single(val plannedExecutions: List<PlannedExecution>? = null) : AssignmentStrategy {
+        override val id: Byte = ID
+
+        public companion object {
+            internal const val ID: Byte = 0
+        }
+    }
+    public data object Competing : AssignmentStrategy {
+        override val id: Byte = 1
+    }
 
     override fun toU8a(): ByteArray = this.id.toU8a()
 
     public companion object {
-        public fun read(buffer: ByteBuffer): AssignmentStrategy {
-            return when (val id = buffer.readByte()) {
-                Single.id -> Single
+        public fun read(buffer: ByteBuffer): AssignmentStrategy =
+            when (val id = buffer.readByte()) {
+                Single.ID -> {
+                    val plannedExecutions = buffer.readOptional {
+                        readList { PlannedExecution.read(this) }
+                    }
+
+                    Single(plannedExecutions)
+                }
                 Competing.id -> Competing
                 else -> throw UnsupportedEncodingException("Unknown AssignmentStrategy $id.")
             }
+    }
+}
+
+public data class PlannedExecution(val source: AccountId32, val startDelay: ULong) {
+    public companion object {
+        public fun read(buffer: ByteBuffer): PlannedExecution {
+            val source = buffer.readAccountId32()
+            val startDelay = buffer.readU64()
+
+            return PlannedExecution(source, startDelay)
         }
     }
 }
 
+public sealed interface ProcessorVersionRequirements {
+    public val id: Byte
 
+    public data class Min(public val platform: UInt, public val buildNumber: UInt) : ProcessorVersionRequirements {
+        override val id: Byte = ID
+
+        public companion object {
+            internal const val ID: Byte = 0
+        }
+    }
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): ProcessorVersionRequirements =
+            when (val id = buffer.readByte()) {
+                Min.ID -> {
+                    val platform = buffer.readU32()
+                    val buildNumber = buffer.readU32()
+
+                    Min(platform, buildNumber)
+                }
+                else -> throw UnsupportedEncodingException("Unknown ProcessorVersionRequirements $id.")
+            }
+    }
+}
+
+public enum class Runtime(public val id: Byte) {
+    NodeJS(0),
+    NodeJSWithBundle(1);
+
+    public companion object {
+        public fun read(buffer: ByteBuffer): Runtime =
+            when (val id = buffer.readByte()) {
+                NodeJS.id -> NodeJS
+                NodeJSWithBundle.id -> NodeJSWithBundle
+                else -> throw UnsupportedEncodingException("Unknown Runtime $id.")
+            }
+    }
+}
