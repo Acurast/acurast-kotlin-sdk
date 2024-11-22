@@ -204,18 +204,20 @@ public sealed interface ProcessorVersionRequirements {
 
         public companion object {
             internal const val ID: Byte = 0
+
+            public fun read(buffer: ByteBuffer): Min {
+                val platform = buffer.readU32()
+                val buildNumber = buffer.readU32()
+
+                return Min(platform, buildNumber)
+            }
         }
     }
 
     public companion object {
         public fun read(buffer: ByteBuffer): ProcessorVersionRequirements =
             when (val id = buffer.readByte()) {
-                Min.ID -> {
-                    val platform = buffer.readU32()
-                    val buildNumber = buffer.readU32()
-
-                    Min(platform, buildNumber)
-                }
+                Min.ID -> Min.read(buffer)
                 else -> throw UnsupportedEncodingException("Unknown ProcessorVersionRequirements $id.")
             }
     }
