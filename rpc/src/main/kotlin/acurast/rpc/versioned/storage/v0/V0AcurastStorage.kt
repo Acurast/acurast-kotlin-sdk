@@ -72,6 +72,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): Boolean
 
+    public suspend fun getAttestation(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): Attestation?
+
     public suspend fun getJobEnvironment(
         jobIdentifier: JobIdentifier,
         accountId: ByteArray,
@@ -264,28 +270,51 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return jobs
     }
 
-    override suspend fun isAttested(
+    private suspend fun getAttestationEncoded(
         accountId: ByteArray,
         blockHash: ByteArray?,
         timeout: Long?,
-    ): Boolean {
+    ): String? {
         val key =
             "Acurast".toByteArray().xxH128() +
                     "StoredAttestation".toByteArray().xxH128() +
                     accountId.blake2b(128) + accountId
 
-        return try {
-            val result = state.getStorage(
-                storageKey = key,
-                blockHash,
-                timeout,
-                engine,
-            )
+        val result = state.getStorage(
+            storageKey = key,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        return result?.takeIf { it.isNotEmpty() }
+    }
+
+    override suspend fun isAttested(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): Boolean =
+        try {
+            val result = getAttestationEncoded(accountId, blockHash, timeout)
 
             !result.isNullOrEmpty()
         } catch (e: Throwable) {
             false
         }
+
+    override suspend fun getAttestation(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): Attestation? {
+        val storage = getAttestationEncoded(accountId, blockHash, timeout)
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return Attestation.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 
     override suspend fun getJobEnvironment(
