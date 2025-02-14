@@ -1,7 +1,18 @@
 package acurast.rpc.versioned.storage.v0
 
-import acurast.codec.extensions.*
-import acurast.codec.type.acurast.*
+import acurast.codec.extensions.blake2b
+import acurast.codec.extensions.hexToBa
+import acurast.codec.extensions.readU128
+import acurast.codec.extensions.readU64
+import acurast.codec.extensions.toHex
+import acurast.codec.extensions.toU8a
+import acurast.codec.extensions.xxH128
+import acurast.codec.type.acurast.Attestation
+import acurast.codec.type.acurast.JobEnvironment
+import acurast.codec.type.acurast.JobIdentifier
+import acurast.codec.type.acurast.JobRegistration
+import acurast.codec.type.acurast.MarketplaceAdvertisementRestriction
+import acurast.codec.type.acurast.MarketplacePricing
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.engine.RpcEngine
@@ -63,6 +74,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): List<JobAssignment>
 
+    public suspend fun getAllJobAssignments(
+        jobIdentifier: JobIdentifier,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): List<JobAssignment>
+
     /**
      * Verify if the account is associated with an attested device.
      */
@@ -114,13 +131,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): FrameSystemAccountInfo {
-        val key =
-            "System".toByteArray().xxH128() +
-                    "Account".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = System_Account(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -139,15 +151,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): PalletAssetsAssetAccount? {
-        val assetIdBytes = assetId.toU8a();
-        val key =
-            "Assets".toByteArray().xxH128() +
-                    "Account".toByteArray().xxH128() +
-                    assetIdBytes.blake2b(128) + assetIdBytes +
-                    accountId.blake2b(128) + accountId
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = Assets_Account(assetId = assetId.toU8a(), accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -165,13 +170,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): Int? {
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "ProcessorToManagerIdIndex".toByteArray().xxH128() +
-                    accountId.blake2b(128)
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = AcurastProcessorManager_ProcessorToManagerIdIndex(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -189,13 +189,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): ULong? {
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "ManagerCounter".toByteArray().xxH128() +
-                    accountId.blake2b(128)
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = AcurastProcessorManager_ManagerCounter(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -213,16 +208,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): JobRegistration? {
-        val origin = jobIdentifier.origin.toU8a()
-        val jobId = jobIdentifier.id.toU8a()
-
-        val indexKey =
-            "Acurast".toByteArray().xxH128() + "StoredJobRegistration".toByteArray().xxH128() +
-                    origin.blake2b(128) + origin +
-                    jobId.blake2b(128) + jobId
-
         val storage = state.getStorage(
-            storageKey = indexKey,
+            storageKey = Acurast_StoredJobRegistration(jobIdentifier = jobIdentifier),
             blockHash,
             timeout,
             engine
@@ -240,15 +227,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): List<JobAssignment> {
-        val jobs: MutableList<JobAssignment> = mutableListOf()
-
-        val indexKey =
-            "AcurastMarketplace".toByteArray().xxH128() +
-                    "StoredMatches".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
         val keys = state.getKeys(
-            key = indexKey,
+            key = AcurastMarketplace_StoredMatches(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -261,13 +241,42 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
             engine,
         )
 
-        if (result.isNotEmpty()) {
-            for (change in result[0].changes) {
-                jobs.add(JobAssignment.read(change, version))
-            }
-        }
+        return result.getOrNull(0)
+            ?.changes
+            ?.map { JobAssignment.read(it, version) }
+            ?: emptyList()
+    }
 
-        return jobs
+    override suspend fun getAllJobAssignments(
+        jobIdentifier: JobIdentifier,
+        blockHash: ByteArray?,
+        timeout: Long?
+    ): List<JobAssignment> {
+        val jobId = jobIdentifier.toU8a()
+
+        val jobIdPartialKey = jobId.blake2b(128) + jobId
+
+        val assignedProcessorsKey = AcurastMarketplace_AssignedProcessors(args = jobIdPartialKey)
+        val storedMatchesPartialKey = AcurastMarketplace_StoredMatches()
+
+        val keys = state.getKeys(
+            key = AcurastMarketplace_AssignedProcessors(jobIdentifier),
+            blockHash,
+            timeout,
+            engine,
+        ).map { (storedMatchesPartialKey + it.hexToBa().drop(assignedProcessorsKey.size) + jobIdPartialKey).toHex() }
+
+        val result = state.queryStorageAt(
+            storageKeys = keys,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        return result.getOrNull(0)
+            ?.changes
+            ?.map { JobAssignment.read(it, version) }
+            ?: emptyList()
     }
 
     private suspend fun getAttestationEncoded(
@@ -275,13 +284,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): String? {
-        val key =
-            "Acurast".toByteArray().xxH128() +
-                    "StoredAttestation".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
-
         val result = state.getStorage(
-            storageKey = key,
+            storageKey = Acurast_StoredAttestation(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -323,16 +327,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): JobEnvironment? {
-        val jobId = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
-
-        val key =
-            "Acurast".toByteArray().xxH128() +
-                    "ExecutionEnvironment".toByteArray().xxH128() +
-                    jobId.blake2b(128) + jobId +
-                    accountId.blake2b(128) + accountId
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = Acurast_ExecutionEnvironment(jobIdentifier = jobIdentifier, accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -346,17 +342,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
     }
 
     override suspend fun getAsset(managerId: Int, blockHash: ByteArray?, timeout: Long?): PalletUniquesItemDetails? {
-        val collectionId = (0).toBigInteger().toU8a()
-        val managerId = managerId.toBigInteger().toU8a()
-
-        val key =
-            "Uniques".toByteArray().xxH128() +
-                    "Asset".toByteArray().xxH128() +
-                    collectionId.blake2b(128) + collectionId +
-                    managerId.blake2b(128) + managerId
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = Uniques_Asset(collectionId = 0, managerId = managerId),
             blockHash,
             timeout,
             engine,
@@ -374,13 +361,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): MarketplacePricing? {
-        val key =
-            "AcurastMarketplace".toByteArray().xxH128() +
-                    "StoredAdvertisementPricing".toByteArray().xxH128() +
-                    accountId.blake2b(128)
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = AcurastMarketplace_StoredAdvertisementPricing(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -398,13 +380,8 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?,
     ): MarketplaceAdvertisementRestriction? {
-        val key =
-            "AcurastMarketplace".toByteArray().xxH128() +
-                    "StoredAdvertisementRestriction".toByteArray().xxH128() +
-                    accountId.blake2b(128)
-
         val storage = state.getStorage(
-            storageKey = key,
+            storageKey = AcurastMarketplace_StoredAdvertisementRestriction(accountId = accountId),
             blockHash,
             timeout,
             engine,
@@ -415,5 +392,100 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }
 
         return MarketplaceAdvertisementRestriction.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    private fun ByteArray.drop(n: Int): ByteArray = sliceArray(n..<size)
+
+    companion object {
+        private fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
+            "Acurast".toByteArray().xxH128() +
+                    "StoredAttestation".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        private fun Acurast_StoredJobRegistration(jobIdentifier: JobIdentifier): ByteArray {
+            val origin = jobIdentifier.origin.toU8a()
+            val jobId = jobIdentifier.id.toU8a()
+
+            return "Acurast".toByteArray().xxH128() +
+                    "StoredJobRegistration".toByteArray().xxH128() +
+                    origin.blake2b(128) + origin +
+                    jobId.blake2b(128) + jobId
+        }
+
+        private fun Acurast_ExecutionEnvironment(jobIdentifier: JobIdentifier, accountId: ByteArray): ByteArray {
+            val jobIdentifier = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
+
+            return "Acurast".toByteArray().xxH128() +
+                    "ExecutionEnvironment".toByteArray().xxH128() +
+                    jobIdentifier.blake2b(128) + jobIdentifier +
+                    accountId.blake2b(128) + accountId
+        }
+
+        private fun AcurastProcessorManager_ProcessorToManagerIdIndex(accountId: ByteArray): ByteArray =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ProcessorToManagerIdIndex".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        private fun AcurastProcessorManager_ManagerCounter(accountId: ByteArray): ByteArray =
+            "AcurastProcessorManager".toByteArray().xxH128() +
+                    "ManagerCounter".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        private fun AcurastMarketplace_StoredMatches(accountId: ByteArray, jobIdentifier: JobIdentifier? = null): ByteArray {
+            val jobIdentifier = jobIdentifier?.toU8a()
+
+            return AcurastMarketplace_StoredMatches(
+                accountId.blake2b(128) + accountId +
+                        (jobIdentifier?.let { it.blake2b(128) + it } ?: byteArrayOf())
+            )
+        }
+
+        private fun AcurastMarketplace_StoredMatches(args: ByteArray = byteArrayOf()): ByteArray =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredMatches".toByteArray().xxH128() + args
+
+        private fun AcurastMarketplace_AssignedProcessors(jobIdentifier: JobIdentifier, accountId: ByteArray? = null): ByteArray {
+            val jobIdentifier = jobIdentifier.toU8a()
+
+            return AcurastMarketplace_AssignedProcessors(
+                jobIdentifier.blake2b(128) + jobIdentifier +
+                        (accountId?.let { it.blake2b(128) + it } ?: byteArrayOf())
+            )
+        }
+
+        private fun AcurastMarketplace_AssignedProcessors(args: ByteArray = byteArrayOf()): ByteArray =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "AssignedProcessors".toByteArray().xxH128() + args
+
+        private fun AcurastMarketplace_StoredAdvertisementPricing(accountId: ByteArray): ByteArray =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredAdvertisementPricing".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        private fun AcurastMarketplace_StoredAdvertisementRestriction(accountId: ByteArray): ByteArray =
+            "AcurastMarketplace".toByteArray().xxH128() +
+                    "StoredAdvertisementRestriction".toByteArray().xxH128() +
+                    accountId.blake2b(128)
+
+        private fun System_Account(accountId: ByteArray): ByteArray =
+            "System".toByteArray().xxH128() +
+                    "Account".toByteArray().xxH128() +
+                    accountId.blake2b(128) + accountId
+
+        private fun Assets_Account(assetId: ByteArray, accountId: ByteArray): ByteArray =
+            "Assets".toByteArray().xxH128() +
+                    "Account".toByteArray().xxH128() +
+                    assetId.blake2b(128) + assetId +
+                    accountId.blake2b(128) + accountId
+
+        private fun Uniques_Asset(collectionId: Int, managerId: Int): ByteArray {
+            val collectionId = collectionId.toBigInteger().toU8a()
+            val managerId = managerId.toBigInteger().toU8a()
+
+            return "Uniques".toByteArray().xxH128() +
+                    "Asset".toByteArray().xxH128() +
+                    collectionId.blake2b(128) + collectionId +
+                    managerId.blake2b(128) + managerId
+        }
     }
 }
