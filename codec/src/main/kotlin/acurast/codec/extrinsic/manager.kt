@@ -2,6 +2,7 @@ package acurast.codec.extrinsic
 
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.ExtrinsicCall
+import acurast.codec.type.manager.Metrics
 import acurast.codec.type.manager.Platform
 import acurast.codec.type.manager.ProcessorPairing
 
@@ -29,6 +30,23 @@ public data class HeartbeatWithVersionCall(
     val buildNumber: UInt,
 ) : ExtrinsicCall {
     override fun toU8a(): ByteArray = callIndex + platform.value.toU8a() + buildNumber.toU8a()
+}
+
+/**
+ * Extrinsic method call 'heartbeatWithMetrics' for the processor-manager pallet.
+ *
+ * @param callIndex The "heartbeat" call index (pallet index + call index).
+ * @param platform
+ * @param buildNumber The build number of the processor app running on the device.
+ * @param metrics
+ */
+public data class HeartbeatWithMetricsCall(
+    val callIndex: ByteArray,
+    val platform: Platform,
+    val buildNumber: UInt,
+    val metrics: List<Metrics>
+) : ExtrinsicCall {
+    override fun toU8a(): ByteArray = callIndex + platform.value.toU8a() + buildNumber.toU8a() + metrics.toU8a()
 }
 
 /**
