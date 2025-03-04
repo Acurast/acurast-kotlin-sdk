@@ -1,18 +1,8 @@
 package acurast.rpc.versioned.storage.v0
 
-import acurast.codec.extensions.blake2b
-import acurast.codec.extensions.hexToBa
-import acurast.codec.extensions.readU128
-import acurast.codec.extensions.readU64
-import acurast.codec.extensions.toHex
-import acurast.codec.extensions.toU8a
-import acurast.codec.extensions.xxH128
-import acurast.codec.type.acurast.Attestation
-import acurast.codec.type.acurast.JobEnvironment
-import acurast.codec.type.acurast.JobIdentifier
-import acurast.codec.type.acurast.JobRegistration
-import acurast.codec.type.acurast.MarketplaceAdvertisementRestriction
-import acurast.codec.type.acurast.MarketplacePricing
+import acurast.codec.extensions.*
+import acurast.codec.type.MetricPool
+import acurast.codec.type.acurast.*
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.engine.RpcEngine
@@ -119,6 +109,18 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
     public companion object {
         public const val VERSION: UInt = 0u
     }
+
+    public suspend fun getMetricPoolIds(
+        names: List<String>,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): List<Byte?>
+
+    public suspend fun getMetricPools(
+        ids: List<Byte>,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): List<MetricPool?>
 }
 
 internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
@@ -396,6 +398,40 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
     private fun ByteArray.drop(n: Int): ByteArray = sliceArray(n..<size)
 
+    override suspend fun getMetricPoolIds(names: List<String>, blockHash: ByteArray?, timeout: Long?): List<Byte?> {
+        val prefix = AcurastCompute_MetricPoolLookup()
+        val keys = names.map { (prefix + it.toByteArray().copyOf(24)).toHex() }
+
+        val storage = state.queryStorageAt(
+            storageKeys = keys,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        return storage.getOrNull(0)
+            ?.changes
+            ?.map { c -> c.getOrNull(1)?.let { ByteBuffer.wrap(it.hexToBa()).readU8().toByte() } }
+            ?: emptyList()
+    }
+
+    override suspend fun getMetricPools(ids: List<Byte>, blockHash: ByteArray?, timeout: Long?): List<MetricPool?> {
+        val prefix = AcurastCompute_MetricPools()
+        val keys = ids.map { (prefix + it).toHex() }
+
+        val storage = state.queryStorageAt(
+            storageKeys = keys,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        return storage.getOrNull(0)
+            ?.changes
+            ?.map { c -> c.getOrNull(1)?.let { MetricPool.read(ByteBuffer.wrap(it.hexToBa())) } }
+            ?: emptyList()
+    }
+
     companion object {
         private fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
             "Acurast".toByteArray().xxH128() +
@@ -487,5 +523,19 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
                     collectionId.blake2b(128) + collectionId +
                     managerId.blake2b(128) + managerId
         }
+
+        private fun AcurastCompute_MetricPoolLookup(name: String): ByteArray =
+            AcurastCompute_MetricPoolLookup(name.toByteArray().copyOf(24))
+
+        private fun AcurastCompute_MetricPoolLookup(args: ByteArray = byteArrayOf()): ByteArray =
+            "AcurastCompute".toByteArray().xxH128() +
+                    "MetricPoolLookup".toByteArray().xxH128() + args
+
+        private fun AcurastCompute_MetricPools(id: Byte): ByteArray =
+            AcurastCompute_MetricPoolLookup(byteArrayOf(id))
+
+        private fun AcurastCompute_MetricPools(args: ByteArray = byteArrayOf()): ByteArray =
+            "AcurastCompute".toByteArray().xxH128() +
+                    "MetricPools".toByteArray().xxH128() + args
     }
 }

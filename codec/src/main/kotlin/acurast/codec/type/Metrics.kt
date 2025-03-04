@@ -1,10 +1,9 @@
-package acurast.codec.type.manager
+package acurast.codec.type
 
-import acurast.codec.extensions.toU8a
-import acurast.codec.type.ToU8a
-import acurast.codec.type.UInt128
+import acurast.codec.extensions.*
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.nio.ByteBuffer
 
 public data class Metrics(
     val poolId: Byte,
@@ -29,4 +28,28 @@ public fun Metrics(poolId: Byte, value: Double): Metrics {
     val denominator = BigInteger.TEN.pow(value.scale())
 
     return Metrics(poolId, numerator, denominator)
+}
+
+public data class MetricPool(
+    public val config: List<Config>
+) {
+    public companion object {
+        public fun read(bytes: ByteBuffer): MetricPool {
+            val config = bytes.readList { Config.read(this) }
+
+            return MetricPool(config)
+        }
+    }
+
+    public data class Config(public val name: String, public val numerator: BigInteger, public val denominator: BigInteger) {
+        public companion object {
+            public fun read(bytes: ByteBuffer): Config {
+                val name = bytes.readBytes(24).decodeToString()
+                val numerator = bytes.readU128()
+                val denominator = bytes.readU128()
+
+                return Config(name, numerator, denominator)
+            }
+        }
+    }
 }
