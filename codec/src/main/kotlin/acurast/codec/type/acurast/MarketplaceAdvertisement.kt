@@ -21,7 +21,8 @@ public data class MarketplaceAdvertisement(
  * A module feature optionally supported by processors.
  */
 public enum class JobModule(public val id: Byte) : ToU8a {
-    DataEncryption(0)
+    DataEncryption(0),
+    LLM(1),
     ;
 
     override fun toU8a(): ByteArray = this.id.toU8a()
@@ -30,6 +31,7 @@ public enum class JobModule(public val id: Byte) : ToU8a {
         public fun read(buffer: ByteBuffer): JobModule {
             return when (val id = buffer.readByte()) {
                 DataEncryption.id -> DataEncryption
+                LLM.id -> LLM
                 else -> throw UnsupportedEncodingException("Unknown JobModule $id.")
             }
         }
