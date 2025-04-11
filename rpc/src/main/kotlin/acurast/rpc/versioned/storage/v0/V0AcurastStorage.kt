@@ -505,7 +505,7 @@ private fun AcurastProcessorManager_ManagementEndpoint(managerId: Int): ByteArra
     val managerId = managerId.toBigInteger().toU8a()
 
     return "AcurastProcessorManager".toByteArray().xxH128() +
-            "ManagerCounter".toByteArray().xxH128() +
+            "ManagementEndpoint".toByteArray().xxH128() +
             managerId.blake2b(128) + managerId
 }
 
