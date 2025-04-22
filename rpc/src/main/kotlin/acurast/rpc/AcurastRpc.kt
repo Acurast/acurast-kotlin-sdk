@@ -1,9 +1,8 @@
 package acurast.rpc
 
-import acurast.codec.extensions.blake2b
-import acurast.codec.extensions.hexToBa
-import acurast.codec.extensions.readU32
-import acurast.codec.extensions.xxH128
+import acurast.codec.extensions.*
+import acurast.codec.type.UInt128
+import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.manager.ProcessorVersion
 import acurast.rpc.engine.RpcEngine
@@ -71,9 +70,7 @@ private class AcurastRpcImpl(
         chain.getHeader(blockHash, timeout, engine)
 
     override suspend fun getApiVersion(blockHash: ByteArray?, timeout: Long?): UInt {
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "ApiVersion".toByteArray().xxH128()
+        val key = AcurastProcessorManager_ApiVersion()
 
         val storage = state.getStorage(
             storageKey = key,
@@ -93,10 +90,7 @@ private class AcurastRpcImpl(
         blockHash: ByteArray?,
         timeout: Long?,
     ): ProcessorUpdateInfo? {
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "ProcessorUpdateInfo".toByteArray().xxH128() +
-                    accountId.blake2b(128) + accountId
+        val key = AcurastProcessorManager_ProcessorUpdateInfo(accountId)
 
         val storage = state.getStorage(
             storageKey = key,
@@ -117,11 +111,7 @@ private class AcurastRpcImpl(
         blockHash: ByteArray?,
         timeout: Long?,
     ): ByteArray? {
-        val versionBytes = version.toU8a()
-        val key =
-            "AcurastProcessorManager".toByteArray().xxH128() +
-                    "KnownBinaryHash".toByteArray().xxH128() +
-                    versionBytes.blake2b(128) + versionBytes
+        val key = AcurastProcessorManager_KnownBinaryHash(version)
 
         val storage = state.getStorage(
             storageKey = key,
@@ -143,4 +133,21 @@ private class AcurastRpcImpl(
 
     private fun failWithUnsupportedApiVersion(version: UInt): Nothing =
         throw UnsupportedApiVersion(version)
+}
+
+internal fun AcurastProcessorManager_ApiVersion(): ByteArray =
+    "AcurastProcessorManager".toByteArray().xxH128() +
+            "ApiVersion".toByteArray().xxH128()
+
+internal fun AcurastProcessorManager_ProcessorUpdateInfo(accountId: ByteArray): ByteArray =
+    "AcurastProcessorManager".toByteArray().xxH128() +
+            "ProcessorUpdateInfo".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId
+
+internal fun AcurastProcessorManager_KnownBinaryHash(version: ProcessorVersion): ByteArray {
+    val version = version.toU8a()
+
+    return "AcurastProcessorManager".toByteArray().xxH128() +
+                "KnownBinaryHash".toByteArray().xxH128() +
+                version.blake2b(128) + version
 }
