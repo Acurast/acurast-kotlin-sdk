@@ -3,6 +3,7 @@ package acurast.rpc.versioned.storage.v0
 import acurast.codec.extensions.*
 import acurast.codec.type.ManagementData
 import acurast.codec.type.MetricPool
+import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
@@ -132,6 +133,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): ManagementData
+
+    public suspend fun getProcessorOverview(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null
+    ): ProcessorOverview
 }
 
 internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
@@ -465,6 +472,34 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
         return ManagementData(updateInfo, managementEndpoint)
     }
+
+    override suspend fun getProcessorOverview(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?
+    ): ProcessorOverview {
+        val managerIdKey = AcurastProcessorManager_ProcessorToManagerIdIndex(accountId)
+        val attestationKey = Acurast_StoredAttestation(accountId)
+        val heartbeatKey = AcurastProcessorManager_ProcessorHeartbeat(accountId)
+
+        val storage = state.queryStorageAt(
+            storageKeys = listOf(
+                managerIdKey.toHex(),
+                attestationKey.toHex(),
+                heartbeatKey.toHex(),
+            ),
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val changes = storage.getOrNull(0)?.changes ?: return ProcessorOverview()
+        val managerId = changes.readChangeValueOrNull(0) { it.readU128().toInt() }
+        val isAttested = changes.readChangeValueOrNull(1) { it } != null
+        val lastHeartbeat = changes.readChangeValueOrNull(2) { it.readU128() }
+
+        return ProcessorOverview(managerId, isAttested, lastHeartbeat)
+    }
 }
 
 private fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
@@ -508,6 +543,11 @@ private fun AcurastProcessorManager_ManagementEndpoint(managerId: Int): ByteArra
             "ManagementEndpoint".toByteArray().xxH128() +
             managerId.blake2b(128) + managerId
 }
+
+private fun AcurastProcessorManager_ProcessorHeartbeat(accountId: ByteArray): ByteArray =
+    "AcurastProcessorManager".toByteArray().xxH128() +
+            "ProcessorHeartbeat".toByteArray().xxH128() +
+            accountId.blake2b(128)
 
 private fun AcurastMarketplace_StoredMatches(accountId: ByteArray, jobIdentifier: JobIdentifier? = null): ByteArray {
     val jobIdentifier = jobIdentifier?.toU8a()
