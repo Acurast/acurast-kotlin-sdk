@@ -4,6 +4,7 @@ import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
+import java.util.ArrayList
 
 public class ScaleDecoderException(msg: String?) : Exception(msg)
 
@@ -75,8 +76,8 @@ public fun ByteBuffer.readCompactInteger(): BigInteger = littleEndian {
     }
 }
 
-public fun ByteBuffer.readByteArray(): ByteArray = littleEndian {
-    val ba = ByteArray(readCompactInteger().toInt())
+public fun ByteBuffer.readByteArray(n: Int? = null): ByteArray = littleEndian {
+    val ba = ByteArray(n ?: readCompactInteger().toInt())
     get(ba)
     ba
 }
