@@ -4,7 +4,6 @@ import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
-import java.util.ArrayList
 
 public class ScaleDecoderException(msg: String?) : Exception(msg)
 

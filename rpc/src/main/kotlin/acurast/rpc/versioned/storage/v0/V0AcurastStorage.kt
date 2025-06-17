@@ -4,7 +4,6 @@ import acurast.codec.extensions.*
 import acurast.codec.type.JobData
 import acurast.codec.type.ManagementData
 import acurast.codec.type.MetricPool
-import acurast.codec.type.Option
 import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
 import acurast.codec.type.manager.ProcessorUpdateInfo
