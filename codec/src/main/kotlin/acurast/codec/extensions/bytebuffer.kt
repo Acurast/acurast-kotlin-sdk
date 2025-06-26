@@ -75,8 +75,8 @@ public fun ByteBuffer.readCompactInteger(): BigInteger = littleEndian {
     }
 }
 
-public fun ByteBuffer.readByteArray(): ByteArray = littleEndian {
-    val ba = ByteArray(readCompactInteger().toInt())
+public fun ByteBuffer.readByteArray(n: Int? = null): ByteArray = littleEndian {
+    val ba = ByteArray(n ?: readCompactInteger().toInt())
     get(ba)
     ba
 }
