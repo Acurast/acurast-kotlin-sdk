@@ -31,13 +31,17 @@ public fun Metrics(poolId: Byte, value: Double): Metrics {
 }
 
 public data class MetricPool(
-    public val config: List<Config>
+    public val config: List<Config>,
+    public val name: String,
+    public val reward: Reward,
 ) {
     public companion object {
         public fun read(bytes: ByteBuffer): MetricPool {
             val config = bytes.readList { Config.read(this) }
+            val name = bytes.readByteArray(n = 24).toString(charset = Charsets.UTF_8)
+            val reward = Reward.read(bytes)
 
-            return MetricPool(config)
+            return MetricPool(config, name, reward)
         }
     }
 
@@ -49,6 +53,16 @@ public data class MetricPool(
                 val denominator = bytes.readU128()
 
                 return Config(name, numerator, denominator)
+            }
+        }
+    }
+
+    public data class Reward(public val current: BigDecimal) {
+        public companion object {
+            public fun read(bytes: ByteBuffer): Reward {
+                val current = BigDecimal(bytes.readU64().toString()).times(BigDecimal.valueOf(1, 18))
+
+                return Reward(current)
             }
         }
     }
