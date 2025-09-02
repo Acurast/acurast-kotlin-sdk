@@ -34,14 +34,16 @@ public data class MetricPool(
     public val config: List<Config>,
     public val name: String,
     public val reward: Reward,
+    public val total: Total,
 ) {
     public companion object {
         public fun read(bytes: ByteBuffer): MetricPool {
             val config = bytes.readList { Config.read(this) }
             val name = bytes.readByteArray(n = 24).toString(charset = Charsets.UTF_8)
             val reward = Reward.read(bytes)
+            val total = Total.read(bytes)
 
-            return MetricPool(config, name, reward)
+            return MetricPool(config, name, reward, total)
         }
     }
 
@@ -57,12 +59,36 @@ public data class MetricPool(
         }
     }
 
-    public data class Reward(public val current: BigDecimal) {
+    public data class Reward(public val current: BigDecimal, public val next: Next?) {
+        public data class Next(val epoch: Long, val value: BigDecimal) {
+            public companion object {
+                public fun read(bytes: ByteBuffer): Next {
+                    val epoch = bytes.readU32()
+                    val value = bytes.readPerquintill()
+
+                    return Next(epoch.toLong(), value)
+                }
+            }
+        }
+
         public companion object {
             public fun read(bytes: ByteBuffer): Reward {
-                val current = BigDecimal(bytes.readU64().toString()).times(BigDecimal.valueOf(1, 18))
+                val current = bytes.readPerquintill()
+                val next = bytes.readOptional { Next.read(this) }
 
-                return Reward(current)
+                return Reward(current, next)
+            }
+        }
+    }
+
+    public data class Total(public val epoch: Long, public val prev: BigDecimal, public val cur: BigDecimal) {
+        public companion object {
+            public fun read(bytes: ByteBuffer): Total {
+                val epoch = bytes.readU32()
+                val prev = bytes.readU128().toBigDecimal(scale = 18)
+                val cur = bytes.readU128().toBigDecimal(scale = 18)
+
+                return Total(epoch.toLong(), prev, cur)
             }
         }
     }

@@ -1,5 +1,6 @@
 package acurast.codec.extensions
 
+import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -105,3 +106,6 @@ public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer
         }
     }
 }
+
+public fun ByteBuffer.readPerquintill(): BigDecimal =
+    BigDecimal(readU64().toString()).times(BigDecimal.valueOf(1, 18))
