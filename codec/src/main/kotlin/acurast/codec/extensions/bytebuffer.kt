@@ -107,4 +107,8 @@ public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer
     }
 }
 
-public fun ByteBuffer.readPerquintill(): BigDecimal = BigDecimal(readU64().toString()).setScale(18)
+public fun ByteBuffer.readPerquintill(): BigDecimal =
+    BigDecimal(readU64().toString()).times(BigDecimal.valueOf(1, 18))
+
+public fun ByteBuffer.readFixedU128(): BigDecimal =
+    readU128().toBigDecimal().times(BigDecimal.valueOf(1, 18))

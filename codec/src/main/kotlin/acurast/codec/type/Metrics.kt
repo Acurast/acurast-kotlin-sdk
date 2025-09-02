@@ -85,8 +85,8 @@ public data class MetricPool(
         public companion object {
             public fun read(bytes: ByteBuffer): Total {
                 val epoch = bytes.readU32()
-                val prev = bytes.readU128().toBigDecimal(scale = 18)
-                val cur = bytes.readU128().toBigDecimal(scale = 18)
+                val prev = bytes.readFixedU128()
+                val cur = bytes.readFixedU128()
 
                 return Total(epoch.toLong(), prev, cur)
             }
