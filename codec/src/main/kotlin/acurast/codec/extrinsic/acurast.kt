@@ -2,6 +2,7 @@ package acurast.codec.extrinsic
 
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.type.ExtrinsicCall
+import acurast.codec.type.acurast.AttestationChain
 
 /**
  * Extrinsic method call 'submitAttestation'.
@@ -10,11 +11,10 @@ import acurast.codec.type.ExtrinsicCall
  * @param callIndex The "submitAttestation" call index (pallet index + call index).
  * @param attestationChain A list of certificates in bytes. The list must be ordered, starting from one of the known [trusted root certificates](https://developer.android.com/training/articles/security-key-attestation#root_certificate).
  */
-public data class SubmitAttestationCall(val callIndex: ByteArray, val attestationChain: List<ByteArray>):
+public data class SubmitAttestationCall(val callIndex: ByteArray, val attestationChain: AttestationChain):
     ExtrinsicCall {
     override fun toU8a(): ByteArray {
-        return callIndex + attestationChain.size.toLong().toCompactU8a() + attestationChain
-            .fold(byteArrayOf()) { acc, cert -> acc + cert.size.toLong().toCompactU8a() + cert }
+        return callIndex + attestationChain.toU8a()
     }
 }
 
