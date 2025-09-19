@@ -1,8 +1,11 @@
 package acurast.codec.type
 
+import acurast.codec.extensions.readByte
+import acurast.codec.extensions.readByteArray
 import acurast.codec.extensions.toCompactU8a
 import acurast.codec.extensions.toU8a
 import java.math.BigInteger
+import java.nio.ByteBuffer
 
 /**
  * The payload signature of a given extrinsic.
@@ -21,6 +24,22 @@ public enum class CurveKind(public val id: Int) {
     Ed25519WithPrefix(5),
     K256WithPrefix(6),
     Ed25519WithBase64(7),
+    ;
+
+    public companion object {
+        public fun read(value: ByteBuffer): CurveKind =
+            when (value.readByte().toInt()) {
+                0 -> Ed25519
+                1 -> Sr25519
+                2 -> Secp256k1
+                3 -> Secp256r1
+                4 -> P256WithAuthData
+                5 -> Ed25519WithPrefix
+                6 -> K256WithPrefix
+                7 -> Ed25519WithBase64
+                else -> throw IllegalArgumentException("Unknown CurveKind")
+            }
+    }
 }
 
 /**
@@ -33,6 +52,15 @@ public class MultiSignature(
 ): ExtrinsicPayloadSignature {
     override fun toU8a(): ByteArray {
         return kind.id.toByte().toU8a() + signature
+    }
+
+    public companion object {
+        public fun read(value: ByteBuffer): MultiSignature {
+            val kind = CurveKind.read(value)
+            val signature = value.readByteArray(64)
+
+            return MultiSignature(kind, signature)
+        }
     }
 }
 

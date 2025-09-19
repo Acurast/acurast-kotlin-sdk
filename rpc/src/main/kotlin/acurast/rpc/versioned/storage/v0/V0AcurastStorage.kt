@@ -6,6 +6,7 @@ import acurast.codec.type.ManagementData
 import acurast.codec.type.MetricPool
 import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
+import acurast.codec.type.manager.ProcessorPairing
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
@@ -136,6 +137,7 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
 
     public suspend fun getManagementData(
         managerId: Int?,
+        managerAccountId: ByteArray?,
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
@@ -477,15 +479,21 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
     override suspend fun getManagementData(
         managerId: Int?,
+        managerAccountId: ByteArray?,
         accountId: ByteArray,
         blockHash: ByteArray?,
         timeout: Long?
     ): ManagementData {
         val updateInfoKey = AcurastProcessorManager_ProcessorUpdateInfo(accountId)
-        val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(managerId) }
+        val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(it) }
+        val processorMigrationDataKey = managerAccountId?.let { AcurastProcessorManager_ProcessorMigrationData(it) }
 
         val storage = state.queryStorageAt(
-            storageKeys = listOfNotNull(updateInfoKey.toHex(), managementEndpointKey?.toHex()),
+            storageKeys = listOfNotNull(
+                updateInfoKey.toHex(),
+                managementEndpointKey?.toHex(),
+                processorMigrationDataKey?.toHex(),
+            ),
             blockHash,
             timeout,
             engine,
@@ -494,8 +502,9 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val changes = storage.getOrNull(0)?.changes ?: return ManagementData()
         val updateInfo = changes.readChangeValueOrNull(0) { ProcessorUpdateInfo.read(it) }
         val managementEndpoint = changes.readChangeValueOrNull(1) { it.readString() }
+        val processorMigrationData = changes.readChangeValueOrNull(2) { ProcessorPairing.Proof.read(it) }
 
-        return ManagementData(updateInfo, managementEndpoint)
+        return ManagementData(updateInfo, managementEndpoint, processorMigrationData)
     }
 
     override suspend fun getProcessorOverview(
@@ -576,6 +585,11 @@ private fun AcurastProcessorManager_ManagementEndpoint(managerId: Int): ByteArra
             "ManagementEndpoint".toByteArray().xxH128() +
             managerId.blake2b(128) + managerId
 }
+
+private fun AcurastProcessorManager_ProcessorMigrationData(accountId: ByteArray): ByteArray =
+    PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
+            "ProcessorMigrationData".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId
 
 private fun AcurastProcessorManager_ProcessorHeartbeat(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
