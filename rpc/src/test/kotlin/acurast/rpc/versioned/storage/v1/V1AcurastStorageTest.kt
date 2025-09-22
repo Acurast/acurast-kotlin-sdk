@@ -1,19 +1,18 @@
 package acurast.rpc.versioned.storage.v1
 
-import acurast.codec.extensions.blake2b
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
-import acurast.codec.extensions.xxH128
 import acurast.codec.type.AccountId32
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MultiOrigin
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
 import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.PalletAssetsAssetAccount
-import acurast.rpc.versioned.storage.v1.V1AcurastStorage
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
+import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import matcher.matchJsonRpcRequest
 import org.json.JSONArray
