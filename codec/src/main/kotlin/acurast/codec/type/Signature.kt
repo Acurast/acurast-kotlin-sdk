@@ -57,7 +57,7 @@ public class MultiSignature(
     public companion object {
         public fun read(value: ByteBuffer): MultiSignature {
             val kind = CurveKind.read(value)
-            val signature = value.readByteArray(64)
+            val signature = value.readByteArray(value.remaining())
 
             return MultiSignature(kind, signature)
         }
