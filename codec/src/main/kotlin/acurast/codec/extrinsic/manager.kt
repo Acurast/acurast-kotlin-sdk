@@ -3,6 +3,7 @@ package acurast.codec.extrinsic
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.ExtrinsicCall
 import acurast.codec.type.Metrics
+import acurast.codec.type.acurast.AttestationChain
 import acurast.codec.type.manager.Platform
 import acurast.codec.type.manager.ProcessorPairing
 
@@ -60,4 +61,13 @@ public data class PairWithManagerCall(
     val pairing: ProcessorPairing
 ) : ExtrinsicCall {
     override fun toU8a(): ByteArray = callIndex + pairing.toU8a()
+}
+
+public data class OnboardCall(
+    val callIndex: ByteArray,
+    val pairing: ProcessorPairing,
+    val multi: Boolean,
+    val attestationChain: AttestationChain,
+) : ExtrinsicCall {
+    override fun toU8a(): ByteArray = callIndex + pairing.toU8a() + multi.toU8a() + attestationChain.toU8a()
 }

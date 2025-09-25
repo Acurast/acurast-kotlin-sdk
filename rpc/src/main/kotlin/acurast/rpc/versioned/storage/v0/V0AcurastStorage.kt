@@ -6,6 +6,7 @@ import acurast.codec.type.ManagementData
 import acurast.codec.type.MetricPool
 import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
+import acurast.codec.type.manager.ProcessorPairing
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
 import acurast.codec.type.uniques.PalletUniquesItemDetails
@@ -13,11 +14,10 @@ import acurast.rpc.AcurastProcessorManager_ProcessorUpdateInfo
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
 import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.PalletAssetsAssetAccount
 import acurast.rpc.type.readAccountInfo
-import acurast.rpc.type.readPalletAssetsAssetAccount
 import acurast.rpc.utils.readChangeValueOrNull
 import acurast.rpc.versioned.storage.VersionedAcurastStorage
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
 public interface V0AcurastStorage : VersionedAcurastStorage {
@@ -28,29 +28,25 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
     ): FrameSystemAccountInfo
 
     /**
-     * Query asset information for a given account.
-     */
-    public suspend fun getAccountAssetInfo(
-        assetId: Int,
-        accountId: ByteArray,
-        blockHash: ByteArray? = null,
-        timeout: Long? = null,
-    ): PalletAssetsAssetAccount?
-
-    /**
      * Get the manager paired with this device
      */
-    public suspend fun getManagerIdentifier(
+    public suspend fun getManagerIndexForProcessor(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-    ): Int?
+    ): BigInteger?
 
     public suspend fun getManagerCounter(
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): ULong?
+    
+    public suspend fun getManagerIndex(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): BigInteger?
 
     /**
      * Get the registration information of a given job.
@@ -104,7 +100,7 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): JobEnvironment?
 
-    public suspend fun getAsset(managerId: Int, blockHash: ByteArray? = null, timeout: Long? = null): PalletUniquesItemDetails?
+    public suspend fun getAsset(managerId: BigInteger, blockHash: ByteArray? = null, timeout: Long? = null): PalletUniquesItemDetails?
 
     public suspend fun getMarketplacePricing(
         accountId: ByteArray,
@@ -135,7 +131,8 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
     ): List<MetricPool?>
 
     public suspend fun getManagementData(
-        managerId: Int?,
+        managerId: BigInteger?,
+        managerAccountId: ByteArray?,
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
@@ -172,31 +169,11 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
     }
 
-    override suspend fun getAccountAssetInfo(
-        assetId: Int,
+    override suspend fun getManagerIndexForProcessor(
         accountId: ByteArray,
         blockHash: ByteArray?,
         timeout: Long?,
-    ): PalletAssetsAssetAccount? {
-        val storage = state.getStorage(
-            storageKey = Assets_Account(assetId = assetId.toU8a(), accountId = accountId),
-            blockHash,
-            timeout,
-            engine,
-        )
-
-        if (storage.isNullOrEmpty()) {
-            return null
-        }
-
-        return ByteBuffer.wrap(storage.hexToBa()).readPalletAssetsAssetAccount()
-    }
-
-    override suspend fun getManagerIdentifier(
-        accountId: ByteArray,
-        blockHash: ByteArray?,
-        timeout: Long?,
-    ): Int? {
+    ): BigInteger? {
         val storage = state.getStorage(
             storageKey = AcurastProcessorManager_ProcessorToManagerIdIndex(accountId = accountId),
             blockHash,
@@ -208,7 +185,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
             return null
         }
 
-        return ByteBuffer.wrap(storage.hexToBa()).readU128().toInt()
+        return ByteBuffer.wrap(storage.hexToBa()).readU128()
     }
 
     override suspend fun getManagerCounter(
@@ -228,6 +205,25 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }
 
         return ByteBuffer.wrap(storage.hexToBa()).readU64()
+    }
+
+    override suspend fun getManagerIndex(accountId: ByteArray, blockHash: ByteArray?, timeout: Long?): BigInteger? {
+        val partialKey = Uniques_Account(accountId, 0)
+        val keys = state.getKeys(
+            key = partialKey,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        return keys
+            .firstOrNull()
+            ?.let {
+                val bytes = ByteBuffer.wrap(it.hexToBa())
+                bytes.readByteArray(partialKey.size + 16 /* blake2_128(u128).size */)
+
+                bytes.readU128()
+            }
     }
 
     override suspend fun getJobRegistration(
@@ -386,7 +382,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return JobEnvironment.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 
-    override suspend fun getAsset(managerId: Int, blockHash: ByteArray?, timeout: Long?): PalletUniquesItemDetails? {
+    override suspend fun getAsset(managerId: BigInteger, blockHash: ByteArray?, timeout: Long?): PalletUniquesItemDetails? {
         val storage = state.getStorage(
             storageKey = Uniques_Asset(collectionId = 0, managerId = managerId),
             blockHash,
@@ -476,16 +472,22 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
     }
 
     override suspend fun getManagementData(
-        managerId: Int?,
+        managerId: BigInteger?,
+        managerAccountId: ByteArray?,
         accountId: ByteArray,
         blockHash: ByteArray?,
         timeout: Long?
     ): ManagementData {
         val updateInfoKey = AcurastProcessorManager_ProcessorUpdateInfo(accountId)
-        val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(managerId) }
+        val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(it) }
+        val processorMigrationDataKey = managerAccountId?.let { AcurastProcessorManager_ProcessorMigrationData(it) }
 
         val storage = state.queryStorageAt(
-            storageKeys = listOfNotNull(updateInfoKey.toHex(), managementEndpointKey?.toHex()),
+            storageKeys = listOfNotNull(
+                updateInfoKey.toHex(),
+                managementEndpointKey?.toHex(),
+                processorMigrationDataKey?.toHex(),
+            ),
             blockHash,
             timeout,
             engine,
@@ -494,8 +496,9 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val changes = storage.getOrNull(0)?.changes ?: return ManagementData()
         val updateInfo = changes.readChangeValueOrNull(0) { ProcessorUpdateInfo.read(it) }
         val managementEndpoint = changes.readChangeValueOrNull(1) { it.readString() }
+        val processorMigrationData = changes.readChangeValueOrNull(2) { ProcessorPairing.Proof.read(it) }
 
-        return ManagementData(updateInfo, managementEndpoint)
+        return ManagementData(updateInfo, managementEndpoint, processorMigrationData)
     }
 
     override suspend fun getProcessorOverview(
@@ -519,7 +522,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         )
 
         val changes = storage.getOrNull(0)?.changes ?: return ProcessorOverview()
-        val managerId = changes.readChangeValueOrNull(0) { it.readU128().toInt() }
+        val managerId = changes.readChangeValueOrNull(0) { it.readU128() }
         val isAttested = changes.readChangeValueOrNull(1) { it } != null
         val lastHeartbeat = changes.readChangeValueOrNull(2) { it.readU128() }
 
@@ -532,7 +535,6 @@ private const val PALLET_ACURAST_PROCESSOR_MANAGER = "AcurastProcessorManager"
 private const val PALLET_ACURAST_MARKETPLACE = "AcurastMarketplace"
 private const val PALLET_ACURAST_COMPUTE = "AcurastCompute"
 private const val PALLET_SYSTEM = "System"
-private const val PALLET_ASSETS = "Assets"
 private const val PALLET_UNIQUES = "Uniques"
 
 private fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
@@ -569,13 +571,18 @@ private fun AcurastProcessorManager_ManagerCounter(accountId: ByteArray): ByteAr
             "ManagerCounter".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun AcurastProcessorManager_ManagementEndpoint(managerId: Int): ByteArray {
-    val managerId = managerId.toBigInteger().toU8a()
+private fun AcurastProcessorManager_ManagementEndpoint(managerId: BigInteger): ByteArray {
+    val managerId = managerId.toU8a()
 
     return PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
             "ManagementEndpoint".toByteArray().xxH128() +
             managerId.blake2b(128) + managerId
 }
+
+private fun AcurastProcessorManager_ProcessorMigrationData(accountId: ByteArray): ByteArray =
+    PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
+            "ProcessorMigrationData".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId
 
 private fun AcurastProcessorManager_ProcessorHeartbeat(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
@@ -631,15 +638,18 @@ private fun System_Account(accountId: ByteArray): ByteArray =
             "Account".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId
 
-private fun Assets_Account(assetId: ByteArray, accountId: ByteArray): ByteArray =
-    PALLET_ASSETS.toByteArray().xxH128() +
-            "Account".toByteArray().xxH128() +
-            assetId.blake2b(128) + assetId +
-            accountId.blake2b(128) + accountId
-
-private fun Uniques_Asset(collectionId: Int, managerId: Int): ByteArray {
+private fun Uniques_Account(accountId: ByteArray, collectionId: Int): ByteArray {
     val collectionId = collectionId.toBigInteger().toU8a()
-    val managerId = managerId.toBigInteger().toU8a()
+
+    return PALLET_UNIQUES.toByteArray().xxH128() +
+            "Account".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId +
+            collectionId.blake2b(128) + collectionId
+}
+
+private fun Uniques_Asset(collectionId: Int, managerId: BigInteger): ByteArray {
+    val collectionId = collectionId.toBigInteger().toU8a()
+    val managerId = managerId.toU8a()
 
     return PALLET_UNIQUES.toByteArray().xxH128() +
             "Asset".toByteArray().xxH128() +

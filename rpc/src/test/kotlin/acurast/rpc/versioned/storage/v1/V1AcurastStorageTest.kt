@@ -1,19 +1,18 @@
 package acurast.rpc.versioned.storage.v1
 
-import acurast.codec.extensions.blake2b
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
-import acurast.codec.extensions.xxH128
 import acurast.codec.type.AccountId32
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MultiOrigin
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
 import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.PalletAssetsAssetAccount
-import acurast.rpc.versioned.storage.v1.V1AcurastStorage
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
+import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import matcher.matchJsonRpcRequest
 import org.json.JSONArray
@@ -102,40 +101,6 @@ class V1AcurastStorageTest {
 
         val response = runBlocking {
             acurastStorage.getAccountInfo(account.hexToBa())
-        }
-
-        assertEquals(expectedResponse, response)
-
-        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
-    }
-
-    @Test
-    fun `Get Account Asset Information`() {
-        val assetId = 10
-        val account = "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
-        val method = "state_getStorage"
-        val params = JSONArray().apply {
-            put("682a59d51ab9e48a8c8cc418ff9708d2b99d880ec681799c0cf30e8886371da91523c4974e05c5b917b6037dec663b5d0a000000de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
-        }
-
-        val expectedResponse = PalletAssetsAssetAccount(
-            balance = BigInteger("99999999999999999999999999000000000000"),
-            isFrozen = false,
-            reason = 0,
-        )
-
-        val jsonResponse = JSONObject("""                	
-            {
-                "jsonrpc": "2.0",
-                "result": "0x00f05a2b57218a097ac4865aa84c3b4b0000",
-                "id": 1
-            }
-        """.trimIndent())
-
-        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
-
-        val response = runBlocking {
-            acurastStorage.getAccountAssetInfo(assetId, account.hexToBa())
         }
 
         assertEquals(expectedResponse, response)

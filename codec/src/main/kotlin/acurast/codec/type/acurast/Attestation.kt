@@ -1,6 +1,7 @@
 package acurast.codec.type.acurast
 
 import acurast.codec.extensions.*
+import acurast.codec.type.ToU8a
 import acurast.codec.type.UInt16
 import acurast.codec.type.UInt32
 import acurast.codec.type.UInt64
@@ -8,6 +9,12 @@ import acurast.codec.type.UInt8
 import acurast.codec.type.acurast.AttestationSecurityLevel.*
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
+
+@JvmInline
+public value class AttestationChain(val bytes: List<ByteArray>) : ToU8a {
+    override fun toU8a(): ByteArray = bytes.size.toLong().toCompactU8a() + bytes
+        .fold(byteArrayOf()) { acc, cert -> acc + cert.size.toLong().toCompactU8a() + cert }
+}
 
 public data class Attestation(
     public val certIds: List<CertId>,
