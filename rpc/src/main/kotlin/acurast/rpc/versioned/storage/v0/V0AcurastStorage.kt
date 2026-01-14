@@ -1,9 +1,10 @@
 package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.*
+import acurast.codec.type.AccountInfo
 import acurast.codec.type.JobData
 import acurast.codec.type.ManagementData
-import acurast.codec.type.MetricPool
+import acurast.codec.type.compute.MetricPool
 import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
 import acurast.codec.type.manager.ProcessorPairing
@@ -13,8 +14,6 @@ import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.AcurastProcessorManager_ProcessorUpdateInfo
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
-import acurast.rpc.type.FrameSystemAccountInfo
-import acurast.rpc.type.readAccountInfo
 import acurast.rpc.utils.readChangeValueOrNull
 import acurast.rpc.versioned.storage.VersionedAcurastStorage
 import java.math.BigInteger
@@ -25,7 +24,7 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         accountId: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
-    ): FrameSystemAccountInfo
+    ): AccountInfo
 
     /**
      * Get the manager paired with this device
@@ -154,7 +153,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         accountId: ByteArray,
         blockHash: ByteArray?,
         timeout: Long?,
-    ): FrameSystemAccountInfo {
+    ): AccountInfo {
         val storage = state.getStorage(
             storageKey = System_Account(accountId = accountId),
             blockHash,
@@ -163,10 +162,10 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         )
 
         if (storage.isNullOrEmpty()) {
-            return FrameSystemAccountInfo()
+            return AccountInfo()
         }
 
-        return ByteBuffer.wrap(storage.hexToBa()).readAccountInfo()
+        return AccountInfo.read(ByteBuffer.wrap(storage.hexToBa()))
     }
 
     override suspend fun getManagerIndexForProcessor(
