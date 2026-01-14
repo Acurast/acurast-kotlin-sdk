@@ -5,8 +5,14 @@ import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
+import kotlin.math.absoluteValue
 
 public class ScaleDecoderException(msg: String?) : Exception(msg)
+
+public fun ByteBuffer.positionRelative(offset: Int): ByteBuffer {
+    val startingPosition = if (offset >= 0) position() else remaining()
+    return position(startingPosition + offset)
+}
 
 public inline fun <reified T> ByteBuffer.littleEndian(decoder: ByteBuffer.() -> T): T {
     order(ByteOrder.LITTLE_ENDIAN)

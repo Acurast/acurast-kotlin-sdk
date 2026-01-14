@@ -2,11 +2,14 @@ package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.*
 import acurast.codec.type.AccountInfo
+import acurast.codec.type.AccountOverview
 import acurast.codec.type.JobData
 import acurast.codec.type.ManagementData
 import acurast.codec.type.compute.MetricPool
 import acurast.codec.type.ProcessorOverview
 import acurast.codec.type.acurast.*
+import acurast.codec.type.compute.Commitment
+import acurast.codec.type.compute.Delegation
 import acurast.codec.type.manager.ProcessorPairing
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
@@ -14,6 +17,7 @@ import acurast.codec.type.uniques.PalletUniquesItemDetails
 import acurast.rpc.AcurastProcessorManager_ProcessorUpdateInfo
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
+import acurast.rpc.utils.readChangeKeyOrNull
 import acurast.rpc.utils.readChangeValueOrNull
 import acurast.rpc.versioned.storage.VersionedAcurastStorage
 import java.math.BigInteger
@@ -25,6 +29,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
     ): AccountInfo
+
+    public suspend fun getAccountOverview(
+        accountId: ByteArray,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): AccountOverview?
 
     /**
      * Get the manager paired with this device
@@ -166,6 +176,68 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }
 
         return AccountInfo.read(ByteBuffer.wrap(storage.hexToBa()))
+    }
+
+    override suspend fun getAccountOverview(
+        accountId: ByteArray,
+        blockHash: ByteArray?,
+        timeout: Long?
+    ): AccountOverview? {
+        val systemAccountKey = System_Account(accountId = accountId)
+        val committerIdAssetKey = Uniques_Account(accountId = accountId, collectionId = 1)
+        val delegationKey = AcurastCompute_Delegations(accountId = accountId)
+
+        val delegationKeys = state.getKeys(
+            key = delegationKey,
+            blockHash,
+            timeout,
+            engine
+        )
+
+        val storageFirst = state.queryStorageAt(
+            storageKeys = listOf(systemAccountKey.toHex(), committerIdAssetKey.toHex()) + delegationKeys,
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val changesFirst = storageFirst.getOrNull(0)?.changes ?: return null
+        val accountInfo = changesFirst.readChangeValueOrNull(0) { AccountInfo.read(it) } ?: return null
+        val committerId = changesFirst.readChangeValueOrNull(1) { it.readU128() }
+        val delegations = changesFirst.subList(2, changesFirst.size).mapNotNull { delegationChange ->
+            val committerId = delegationChange.readChangeKeyOrNull { it.positionRelative(-16).readU128() } ?: return@mapNotNull null
+            val delegation = delegationChange.readChangeValueOrNull { Delegation.read(it) } ?: return@mapNotNull null
+
+            committerId to delegation
+        }
+
+        val ownCommitmentKey = committerId?.let { AcurastCompute_Commitments(it) }
+        val delegationCommitmentKeys = delegations.map { AcurastCompute_Commitments(it.first)}
+
+        val storageSecond = state.queryStorageAt(
+            storageKeys = listOfNotNull(ownCommitmentKey?.toHex()) + delegationCommitmentKeys.map { it.toHex() },
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val changesSecond = storageSecond.getOrNull(0)?.changes
+        val commitments = changesSecond?.mapNotNull { change ->
+            val committerId = change.readChangeKeyOrNull { it.positionRelative(-16).readU128() } ?: return@mapNotNull null
+            val commitment = change.readChangeValueOrNull { Commitment.read(it) } ?: return@mapNotNull null
+
+            committerId to commitment
+        }?.toMap() ?: emptyMap()
+
+        return AccountOverview(
+            accountInfo,
+            committerId?.let { commitments[it] },
+            delegations.mapNotNull { (committerId, delegation) ->
+                val commitment = commitments[committerId] ?: return@mapNotNull null
+
+                delegation to commitment
+           },
+        )
     }
 
     override suspend fun getManagerIndexForProcessor(
@@ -536,12 +608,12 @@ private const val PALLET_ACURAST_COMPUTE = "AcurastCompute"
 private const val PALLET_SYSTEM = "System"
 private const val PALLET_UNIQUES = "Uniques"
 
-private fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
+internal fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
     PALLET_ACURAST.toByteArray().xxH128() +
             "StoredAttestation".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId
 
-private fun Acurast_StoredJobRegistration(jobIdentifier: JobIdentifier): ByteArray {
+internal fun Acurast_StoredJobRegistration(jobIdentifier: JobIdentifier): ByteArray {
     val origin = jobIdentifier.origin.toU8a()
     val jobId = jobIdentifier.id.toU8a()
 
@@ -551,7 +623,7 @@ private fun Acurast_StoredJobRegistration(jobIdentifier: JobIdentifier): ByteArr
             jobId.blake2b(128) + jobId
 }
 
-private fun Acurast_ExecutionEnvironment(jobIdentifier: JobIdentifier, accountId: ByteArray): ByteArray {
+internal fun Acurast_ExecutionEnvironment(jobIdentifier: JobIdentifier, accountId: ByteArray): ByteArray {
     val jobIdentifier = jobIdentifier.origin.toU8a() + jobIdentifier.id.toU8a()
 
     return PALLET_ACURAST.toByteArray().xxH128() +
@@ -560,17 +632,17 @@ private fun Acurast_ExecutionEnvironment(jobIdentifier: JobIdentifier, accountId
             accountId.blake2b(128) + accountId
 }
 
-private fun AcurastProcessorManager_ProcessorToManagerIdIndex(accountId: ByteArray): ByteArray =
+internal fun AcurastProcessorManager_ProcessorToManagerIdIndex(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
             "ProcessorToManagerIdIndex".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun AcurastProcessorManager_ManagerCounter(accountId: ByteArray): ByteArray =
+internal fun AcurastProcessorManager_ManagerCounter(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
             "ManagerCounter".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun AcurastProcessorManager_ManagementEndpoint(managerId: BigInteger): ByteArray {
+internal fun AcurastProcessorManager_ManagementEndpoint(managerId: BigInteger): ByteArray {
     val managerId = managerId.toU8a()
 
     return PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
@@ -578,17 +650,17 @@ private fun AcurastProcessorManager_ManagementEndpoint(managerId: BigInteger): B
             managerId.blake2b(128) + managerId
 }
 
-private fun AcurastProcessorManager_ProcessorMigrationData(accountId: ByteArray): ByteArray =
+internal fun AcurastProcessorManager_ProcessorMigrationData(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
             "ProcessorMigrationData".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId
 
-private fun AcurastProcessorManager_ProcessorHeartbeat(accountId: ByteArray): ByteArray =
+internal fun AcurastProcessorManager_ProcessorHeartbeat(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_PROCESSOR_MANAGER.toByteArray().xxH128() +
             "ProcessorHeartbeat".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun AcurastMarketplace_StoredMatches(accountId: ByteArray, jobIdentifier: JobIdentifier? = null): ByteArray {
+internal fun AcurastMarketplace_StoredMatches(accountId: ByteArray, jobIdentifier: JobIdentifier? = null): ByteArray {
     val jobIdentifier = jobIdentifier?.toU8a()
 
     return AcurastMarketplace_StoredMatches(
@@ -601,7 +673,7 @@ private fun AcurastMarketplace_StoredMatches(args: ByteArray = byteArrayOf()): B
     PALLET_ACURAST_MARKETPLACE.toByteArray().xxH128() +
             "StoredMatches".toByteArray().xxH128() + args
 
-private fun AcurastMarketplace_JobKeyIds(jobIdentifier: JobIdentifier): ByteArray {
+internal fun AcurastMarketplace_JobKeyIds(jobIdentifier: JobIdentifier): ByteArray {
     val jobIdentifier = jobIdentifier.toU8a()
 
     return PALLET_ACURAST_MARKETPLACE.toByteArray().xxH128() +
@@ -609,7 +681,7 @@ private fun AcurastMarketplace_JobKeyIds(jobIdentifier: JobIdentifier): ByteArra
             jobIdentifier.blake2b(128) + jobIdentifier
 }
 
-private fun AcurastMarketplace_AssignedProcessors(jobIdentifier: JobIdentifier, accountId: ByteArray? = null): ByteArray {
+internal fun AcurastMarketplace_AssignedProcessors(jobIdentifier: JobIdentifier, accountId: ByteArray? = null): ByteArray {
     val jobIdentifier = jobIdentifier.toU8a()
 
     return AcurastMarketplace_AssignedProcessors(
@@ -622,22 +694,22 @@ private fun AcurastMarketplace_AssignedProcessors(args: ByteArray = byteArrayOf(
     PALLET_ACURAST_MARKETPLACE.toByteArray().xxH128() +
             "AssignedProcessors".toByteArray().xxH128() + args
 
-private fun AcurastMarketplace_StoredAdvertisementPricing(accountId: ByteArray): ByteArray =
+internal fun AcurastMarketplace_StoredAdvertisementPricing(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_MARKETPLACE.toByteArray().xxH128() +
             "StoredAdvertisementPricing".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun AcurastMarketplace_StoredAdvertisementRestriction(accountId: ByteArray): ByteArray =
+internal fun AcurastMarketplace_StoredAdvertisementRestriction(accountId: ByteArray): ByteArray =
     PALLET_ACURAST_MARKETPLACE.toByteArray().xxH128() +
             "StoredAdvertisementRestriction".toByteArray().xxH128() +
             accountId.blake2b(128)
 
-private fun System_Account(accountId: ByteArray): ByteArray =
+internal fun System_Account(accountId: ByteArray): ByteArray =
     PALLET_SYSTEM.toByteArray().xxH128() +
             "Account".toByteArray().xxH128() +
             accountId.blake2b(128) + accountId
 
-private fun Uniques_Account(accountId: ByteArray, collectionId: Int): ByteArray {
+internal fun Uniques_Account(accountId: ByteArray, collectionId: Int): ByteArray {
     val collectionId = collectionId.toBigInteger().toU8a()
 
     return PALLET_UNIQUES.toByteArray().xxH128() +
@@ -646,7 +718,7 @@ private fun Uniques_Account(accountId: ByteArray, collectionId: Int): ByteArray 
             collectionId.blake2b(128) + collectionId
 }
 
-private fun Uniques_Asset(collectionId: Int, managerId: BigInteger): ByteArray {
+internal fun Uniques_Asset(collectionId: Int, managerId: BigInteger): ByteArray {
     val collectionId = collectionId.toBigInteger().toU8a()
     val managerId = managerId.toU8a()
 
@@ -656,16 +728,27 @@ private fun Uniques_Asset(collectionId: Int, managerId: BigInteger): ByteArray {
             managerId.blake2b(128) + managerId
 }
 
-private fun AcurastCompute_MetricPoolLookup(name: String): ByteArray =
+internal fun AcurastCompute_Commitments(committerId: BigInteger): ByteArray =
+    PALLET_ACURAST_COMPUTE.toByteArray().xxH128() +
+            "Commitments".toByteArray().xxH128() +
+            committerId.toU8a()
+
+internal fun AcurastCompute_Delegations(accountId: ByteArray, committerId: BigInteger? = null): ByteArray =
+    PALLET_ACURAST_COMPUTE.toByteArray().xxH128() +
+            "Delegations".toByteArray().xxH128() +
+            accountId.xxH64() + accountId +
+            (committerId?.toU8a() ?: byteArrayOf())
+
+internal fun AcurastCompute_MetricPoolLookup(name: String): ByteArray =
     AcurastCompute_MetricPoolLookup(name.toByteArray().copyOf(24))
 
-private fun AcurastCompute_MetricPoolLookup(args: ByteArray = byteArrayOf()): ByteArray =
+internal fun AcurastCompute_MetricPoolLookup(args: ByteArray = byteArrayOf()): ByteArray =
     PALLET_ACURAST_COMPUTE.toByteArray().xxH128() +
             "MetricPoolLookup".toByteArray().xxH128() + args
 
-private fun AcurastCompute_MetricPools(id: Byte): ByteArray =
-    AcurastCompute_MetricPoolLookup(byteArrayOf(id))
+internal fun AcurastCompute_MetricPools(id: Byte): ByteArray =
+    AcurastCompute_MetricPools(byteArrayOf(id))
 
-private fun AcurastCompute_MetricPools(args: ByteArray = byteArrayOf()): ByteArray =
+internal fun AcurastCompute_MetricPools(args: ByteArray = byteArrayOf()): ByteArray =
     PALLET_ACURAST_COMPUTE.toByteArray().xxH128() +
             "MetricPools".toByteArray().xxH128() + args
