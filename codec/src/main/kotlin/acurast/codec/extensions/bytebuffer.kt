@@ -17,11 +17,8 @@ public fun ByteBuffer.readU8(): UByte = littleEndian { get().toUByte() }
 public fun ByteBuffer.readU16(): UShort = littleEndian { short.toUShort() }
 public fun ByteBuffer.readU32(): UInt = littleEndian { int.toUInt() }
 public fun ByteBuffer.readU64(): ULong = littleEndian { long.toULong() }
-public fun ByteBuffer.readU128(): BigInteger = littleEndian {
-    val arr = ByteArray(16)
-    get(arr)
-    BigInteger(arr.reversedArray())
-}
+public fun ByteBuffer.readU128(): BigInteger = BigInteger(readByteArray(16).reversedArray())
+public fun ByteBuffer.readU256(): BigInteger = BigInteger(readByteArray(32).reversedArray())
 
 public fun ByteBuffer.readByte(): Byte = littleEndian {
     get()
@@ -77,15 +74,11 @@ public fun ByteBuffer.readCompactInteger(): BigInteger = littleEndian {
 }
 
 public fun ByteBuffer.readByteArray(n: Int? = null): ByteArray = littleEndian {
-    val ba = ByteArray(n ?: readCompactInteger().toInt())
-    get(ba)
-    ba
+    ByteArray(n ?: readCompactInteger().toInt()).apply { get(this) }
 }
 
 public fun ByteBuffer.readBytes(offset: Int): ByteArray = littleEndian {
-    val ba = ByteArray(offset)
-    get(ba)
-    ba
+    ByteArray(offset).apply { get(this) }
 }
 
 public fun ByteBuffer.readOptionalBoolean(): Boolean? = littleEndian {
@@ -106,6 +99,9 @@ public inline fun <reified T> ByteBuffer.readOptional(optionalParser: ByteBuffer
         }
     }
 }
+
+public fun ByteBuffer.readPerbill(): BigDecimal =
+    BigDecimal(readU32().toString()).times(BigDecimal.valueOf(1, 9))
 
 public fun ByteBuffer.readPerquintill(): BigDecimal =
     BigDecimal(readU64().toString()).times(BigDecimal.valueOf(1, 18))

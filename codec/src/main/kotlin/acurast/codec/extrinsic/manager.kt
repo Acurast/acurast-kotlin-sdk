@@ -2,7 +2,7 @@ package acurast.codec.extrinsic
 
 import acurast.codec.extensions.toU8a
 import acurast.codec.type.ExtrinsicCall
-import acurast.codec.type.Metrics
+import acurast.codec.type.compute.Metrics
 import acurast.codec.type.acurast.AttestationChain
 import acurast.codec.type.manager.Platform
 import acurast.codec.type.manager.ProcessorPairing
