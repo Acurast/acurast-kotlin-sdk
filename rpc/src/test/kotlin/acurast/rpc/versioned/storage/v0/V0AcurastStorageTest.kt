@@ -763,4 +763,24 @@ class V0AcurastStorageTest {
             key,
         )
     }
+
+    @Test
+    fun `Storage Query AcurastTokenConversion_LockedConversion`() {
+        val key = AcurastTokenConversion_LockedConversion("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())
+
+        assertContentEquals(
+            "0x668e0c9d8f6a62868eb8af40bb5b05b755c0f3d7e41584c39a4afabe7b681593de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa(),
+            key,
+        )
+    }
+
+    @Test
+    fun `Storage Query Vesting_Vesting`() {
+        val key = Vesting_Vesting("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())
+
+        assertContentEquals(
+            "0x5f27b51b5ec208ee9cb25b55d87282435f27b51b5ec208ee9cb25b55d8728243de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa(),
+            key,
+        )
+    }
 }

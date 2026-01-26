@@ -1,19 +1,17 @@
 package acurast.rpc.versioned.storage.v0
 
 import acurast.codec.extensions.*
-import acurast.codec.type.AccountInfo
-import acurast.codec.type.AccountOverview
-import acurast.codec.type.JobData
-import acurast.codec.type.ManagementData
-import acurast.codec.type.compute.MetricPool
-import acurast.codec.type.ProcessorOverview
+import acurast.codec.type.*
 import acurast.codec.type.acurast.*
 import acurast.codec.type.compute.Commitment
 import acurast.codec.type.compute.Delegation
+import acurast.codec.type.compute.MetricPool
 import acurast.codec.type.manager.ProcessorPairing
 import acurast.codec.type.manager.ProcessorUpdateInfo
 import acurast.codec.type.marketplace.JobAssignment
+import acurast.codec.type.tokenconversion.TokenConversion
 import acurast.codec.type.uniques.PalletUniquesItemDetails
+import acurast.codec.type.vesting.Vesting
 import acurast.rpc.AcurastProcessorManager_ProcessorUpdateInfo
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
@@ -183,8 +181,6 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?
     ): AccountOverview? {
-        val systemAccountKey = System_Account(accountId = accountId)
-        val committerIdAssetKey = Uniques_Account(accountId = accountId, collectionId = 1)
         val delegationKey = AcurastCompute_Delegations(accountId = accountId)
 
         val delegationKeys = state.getKeys(
@@ -193,9 +189,18 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
             timeout,
             engine
         )
+        val systemAccountKey = System_Account(accountId = accountId)
+        val committerIdAssetKey = Uniques_Account(accountId = accountId, collectionId = 1)
+        val vestingKey = Vesting_Vesting(accountId = accountId)
+        val tokenConversionKey = AcurastTokenConversion_LockedConversion(accountId = accountId)
 
         val storageFirst = state.queryStorageAt(
-            storageKeys = listOf(systemAccountKey.toHex(), committerIdAssetKey.toHex()) + delegationKeys,
+            storageKeys = listOf(
+                systemAccountKey.toHex(),
+                committerIdAssetKey.toHex(),
+                vestingKey.toHex(),
+                tokenConversionKey.toHex(),
+            ) + delegationKeys,
             blockHash,
             timeout,
             engine,
@@ -204,7 +209,9 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val changesFirst = storageFirst.getOrNull(0)?.changes ?: return null
         val accountInfo = changesFirst.readChangeValueOrNull(0) { AccountInfo.read(it) } ?: return null
         val committerId = changesFirst.readChangeValueOrNull(1) { it.readU128() }
-        val delegations = changesFirst.subList(2, changesFirst.size).mapNotNull { delegationChange ->
+        val vesting = changesFirst.readChangeValueOrNull(2) { it.readList { Vesting.read(this) } } ?: emptyList()
+        val tokenConversion = changesFirst.readChangeValueOrNull(3) { TokenConversion.read(it) }
+        val delegations = changesFirst.subList(4, changesFirst.size).mapNotNull { delegationChange ->
             val committerId = delegationChange.readChangeKeyOrNull { it.positionRelative(-16).readU128() } ?: return@mapNotNull null
             val delegation = delegationChange.readChangeValueOrNull { Delegation.read(it) } ?: return@mapNotNull null
 
@@ -230,13 +237,15 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         }?.toMap() ?: emptyMap()
 
         return AccountOverview(
-            accountInfo,
-            committerId?.let { commitments[it] },
-            delegations.mapNotNull { (committerId, delegation) ->
+            accountInfo = accountInfo,
+            commitment = committerId?.let { commitments[it] },
+            delegations = delegations.mapNotNull { (committerId, delegation) ->
                 val commitment = commitments[committerId] ?: return@mapNotNull null
 
                 delegation to commitment
            },
+            vesting = vesting,
+            conversion = tokenConversion,
         )
     }
 
@@ -605,8 +614,10 @@ private const val PALLET_ACURAST = "Acurast"
 private const val PALLET_ACURAST_PROCESSOR_MANAGER = "AcurastProcessorManager"
 private const val PALLET_ACURAST_MARKETPLACE = "AcurastMarketplace"
 private const val PALLET_ACURAST_COMPUTE = "AcurastCompute"
+private const val PALLET_ACURAST_TOKEN_CONVERSION = "AcurastTokenConversion"
 private const val PALLET_SYSTEM = "System"
 private const val PALLET_UNIQUES = "Uniques"
+private const val PALLET_VESTING = "Vesting"
 
 internal fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
     PALLET_ACURAST.toByteArray().xxH128() +
@@ -752,3 +763,13 @@ internal fun AcurastCompute_MetricPools(id: Byte): ByteArray =
 internal fun AcurastCompute_MetricPools(args: ByteArray = byteArrayOf()): ByteArray =
     PALLET_ACURAST_COMPUTE.toByteArray().xxH128() +
             "MetricPools".toByteArray().xxH128() + args
+
+internal fun AcurastTokenConversion_LockedConversion(accountId: ByteArray): ByteArray =
+    PALLET_ACURAST_TOKEN_CONVERSION.toByteArray().xxH128() +
+            "LockedConversion".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId
+
+internal fun Vesting_Vesting(accountId: ByteArray): ByteArray =
+    PALLET_VESTING.toByteArray().xxH128() +
+            "Vesting".toByteArray().xxH128() +
+            accountId.blake2b(128) + accountId
