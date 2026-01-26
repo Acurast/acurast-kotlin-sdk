@@ -3,6 +3,9 @@ package acurast.rpc.utils
 import acurast.codec.extensions.hexToBa
 import java.nio.ByteBuffer
 
+internal fun <T> List<List<String>>.readChangeKeyOrNull(index: Int, read: (ByteBuffer) -> T): T? =
+    getOrNull(index)?.readChangeKeyOrNull(read)
+
 internal fun <T> List<List<String>>.readChangeValueOrNull(index: Int, read: (ByteBuffer) -> T): T? =
     getOrNull(index)?.readChangeValueOrNull(read)
 

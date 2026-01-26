@@ -181,25 +181,31 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         blockHash: ByteArray?,
         timeout: Long?
     ): AccountOverview? {
-        val delegationKey = AcurastCompute_Delegations(accountId = accountId)
-
-        val delegationKeys = state.getKeys(
-            key = delegationKey,
+        val committerIdPartialKey = Uniques_Account(accountId = accountId, collectionId = 1)
+        val committerIdKey = state.getKeys(
+            key = committerIdPartialKey,
             blockHash,
             timeout,
-            engine
+            engine,
+        ).firstOrNull()
+
+        val delegationPartialKey = AcurastCompute_Delegations(accountId = accountId)
+        val delegationKeys = state.getKeys(
+            key = delegationPartialKey,
+            blockHash,
+            timeout,
+            engine,
         )
         val systemAccountKey = System_Account(accountId = accountId)
-        val committerIdAssetKey = Uniques_Account(accountId = accountId, collectionId = 1)
         val vestingKey = Vesting_Vesting(accountId = accountId)
         val tokenConversionKey = AcurastTokenConversion_LockedConversion(accountId = accountId)
 
         val storageFirst = state.queryStorageAt(
-            storageKeys = listOf(
+            storageKeys = listOfNotNull(
                 systemAccountKey.toHex(),
-                committerIdAssetKey.toHex(),
                 vestingKey.toHex(),
                 tokenConversionKey.toHex(),
+                committerIdKey,
             ) + delegationKeys,
             blockHash,
             timeout,
@@ -208,10 +214,15 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
         val changesFirst = storageFirst.getOrNull(0)?.changes ?: return null
         val accountInfo = changesFirst.readChangeValueOrNull(0) { AccountInfo.read(it) } ?: return null
-        val committerId = changesFirst.readChangeValueOrNull(1) { it.readU128() }
-        val vesting = changesFirst.readChangeValueOrNull(2) { it.readList { Vesting.read(this) } } ?: emptyList()
-        val tokenConversion = changesFirst.readChangeValueOrNull(3) { TokenConversion.read(it) }
-        val delegations = changesFirst.subList(4, changesFirst.size).mapNotNull { delegationChange ->
+        val vesting = changesFirst.readChangeValueOrNull(1) { it.readList { Vesting.read(this) } } ?: emptyList()
+        val tokenConversion = changesFirst.readChangeValueOrNull(2) { TokenConversion.read(it) }
+        val committerId = committerIdKey?.let {
+            changesFirst.readChangeKeyOrNull(3) {
+                it.readByteArray(committerIdPartialKey.size + 16 /* blake2_128(u128).size */)
+                it.readU128()
+            }
+        }
+        val delegations = changesFirst.subList(if (committerIdKey != null) 4 else 3, changesFirst.size).mapNotNull { delegationChange ->
             val committerId = delegationChange.readChangeKeyOrNull { it.positionRelative(-16).readU128() } ?: return@mapNotNull null
             val delegation = delegationChange.readChangeValueOrNull { Delegation.read(it) } ?: return@mapNotNull null
 
