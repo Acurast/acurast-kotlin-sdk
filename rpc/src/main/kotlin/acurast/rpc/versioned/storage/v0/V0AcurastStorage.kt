@@ -188,6 +188,11 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
             timeout,
             engine,
         ).firstOrNull()
+        val committerId = committerIdKey?.let {
+            val bytes = ByteBuffer.wrap(it.hexToBa())
+            bytes.readByteArray(committerIdPartialKey.size + 16 /* blake2_128(u128).size */)
+            bytes.readU128()
+        }
 
         val delegationPartialKey = AcurastCompute_Delegations(accountId = accountId)
         val delegationKeys = state.getKeys(
@@ -201,11 +206,10 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val tokenConversionKey = AcurastTokenConversion_LockedConversion(accountId = accountId)
 
         val storageFirst = state.queryStorageAt(
-            storageKeys = listOfNotNull(
+            storageKeys = listOf(
                 systemAccountKey.toHex(),
                 vestingKey.toHex(),
                 tokenConversionKey.toHex(),
-                committerIdKey,
             ) + delegationKeys,
             blockHash,
             timeout,
@@ -216,13 +220,7 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val accountInfo = changesFirst.readChangeValueOrNull(0) { AccountInfo.read(it) } ?: return null
         val vesting = changesFirst.readChangeValueOrNull(1) { it.readList { Vesting.read(this) } } ?: emptyList()
         val tokenConversion = changesFirst.readChangeValueOrNull(2) { TokenConversion.read(it) }
-        val committerId = committerIdKey?.let {
-            changesFirst.readChangeKeyOrNull(3) {
-                it.readByteArray(committerIdPartialKey.size + 16 /* blake2_128(u128).size */)
-                it.readU128()
-            }
-        }
-        val delegations = changesFirst.subList(if (committerIdKey != null) 4 else 3, changesFirst.size).mapNotNull { delegationChange ->
+        val delegations = changesFirst.subList(3, changesFirst.size).mapNotNull { delegationChange ->
             val committerId = delegationChange.readChangeKeyOrNull { it.positionRelative(-16).readU128() } ?: return@mapNotNull null
             val delegation = delegationChange.readChangeValueOrNull { Delegation.read(it) } ?: return@mapNotNull null
 
