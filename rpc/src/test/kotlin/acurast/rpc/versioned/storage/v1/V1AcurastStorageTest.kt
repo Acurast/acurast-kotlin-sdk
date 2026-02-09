@@ -3,11 +3,11 @@ package acurast.rpc.versioned.storage.v1
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
 import acurast.codec.type.AccountId32
+import acurast.codec.type.AccountInfo
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.acurast.MultiOrigin
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.pallet.State
-import acurast.rpc.type.FrameSystemAccountInfo
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -76,16 +76,15 @@ class V1AcurastStorageTest {
             put("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
         }
 
-        val expectedResponse = FrameSystemAccountInfo(
+        val expectedResponse = AccountInfo(
             nonce = 0U,
             consumers = 1U,
             providers = 1U,
             sufficients = 0U,
-            data = FrameSystemAccountInfo.FrameSystemAccountInfoData(
+            data = AccountInfo.Data(
                 free = BigInteger("1152921504606846976"),
                 reserved = BigInteger.ZERO,
-                miscFrozen = BigInteger.ZERO,
-                feeFrozen = BigInteger.ZERO,
+                frozen = BigInteger.ZERO,
             )
         )
 

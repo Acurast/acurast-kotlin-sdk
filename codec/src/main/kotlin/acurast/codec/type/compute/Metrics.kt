@@ -1,6 +1,8 @@
-package acurast.codec.type
+package acurast.codec.type.compute
 
 import acurast.codec.extensions.*
+import acurast.codec.type.ToU8a
+import acurast.codec.type.UInt128
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.ByteBuffer

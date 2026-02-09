@@ -1,4 +1,6 @@
-FROM openjdk:11
+FROM alpine:latest
+
+RUN apk add --no-cache openjdk17 bash
 
 RUN mkdir /build
 WORKDIR /build
