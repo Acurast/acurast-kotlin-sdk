@@ -226,7 +226,7 @@ public sealed interface ProcessorVersionRequirements {
 public enum class JobRuntime(public val id: Byte) {
     NodeJS(0),
     NodeJSWithBundle(1),
-    Shell(3),
+    Shell(2),
     ;
 
     public companion object {
