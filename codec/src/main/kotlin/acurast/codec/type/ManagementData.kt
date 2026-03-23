@@ -1,6 +1,5 @@
 package acurast.codec.type
 
-import acurast.codec.type.acurast.MarketplaceAdvertisement
 import acurast.codec.type.acurast.MarketplaceAdvertisementRestriction
 import acurast.codec.type.manager.ProcessorPairing
 import acurast.codec.type.manager.ProcessorUpdateInfo
