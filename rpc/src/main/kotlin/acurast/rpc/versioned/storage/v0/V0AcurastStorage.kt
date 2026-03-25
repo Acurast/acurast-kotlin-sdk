@@ -570,10 +570,12 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val updateInfoKey = AcurastProcessorManager_ProcessorUpdateInfo(accountId)
         val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(it) }
         val processorMigrationDataKey = managerAccountId?.let { AcurastProcessorManager_ProcessorMigrationData(it) }
+        val advertisementKey = AcurastMarketplace_StoredAdvertisementRestriction(accountId)
 
         val storage = state.queryStorageAt(
             storageKeys = listOfNotNull(
                 updateInfoKey.toHex(),
+                advertisementKey.toHex(),
                 managementEndpointKey?.toHex(),
                 processorMigrationDataKey?.toHex(),
             ),
@@ -584,10 +586,13 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
         val changes = storage.getOrNull(0)?.changes ?: return ManagementData()
         val updateInfo = changes.readChangeValueOrNull(0) { ProcessorUpdateInfo.read(it) }
-        val managementEndpoint = changes.readChangeValueOrNull(1) { it.readString() }
-        val processorMigrationData = changes.readChangeValueOrNull(2) { ProcessorPairing.Proof.read(it) }
+        val advertisement = changes.readChangeValueOrNull(1) { MarketplaceAdvertisementRestriction.read(it) }
+        val managementEndpoint = if (managementEndpointKey != null) changes.readChangeValueOrNull(2) { it.readString() } else null
+        val processorMigrationData = if (processorMigrationDataKey != null) changes.readChangeValueOrNull(conditionalIndex(3, managementEndpointKey)) {
+            ProcessorPairing.Proof.read(it)
+        } else null
 
-        return ManagementData(updateInfo, managementEndpoint, processorMigrationData)
+        return ManagementData(updateInfo, managementEndpoint, processorMigrationData, advertisement)
     }
 
     override suspend fun getProcessorOverview(
@@ -618,6 +623,9 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return ProcessorOverview(managerId, isAttested, lastHeartbeat)
     }
 }
+
+internal fun conditionalIndex(target: Int, vararg previousKeys: Any?): Int =
+    target - previousKeys.count { it == null }
 
 private const val PALLET_ACURAST = "Acurast"
 private const val PALLET_ACURAST_PROCESSOR_MANAGER = "AcurastProcessorManager"
