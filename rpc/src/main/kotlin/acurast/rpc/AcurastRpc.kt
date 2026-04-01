@@ -24,6 +24,7 @@ public interface AcurastRpc {
     public val engine: RpcEngine
 
     public suspend fun getBlockHash(blockNumber: BigInteger? = null, timeout: Long? = null): String?
+    public suspend fun getFinalizedBlockHash(timeout: Long? = null): String?
     public suspend fun getHeader(blockHash: ByteArray? = null, timeout: Long? = null): Header
 
     public suspend fun getApiVersion(blockHash: ByteArray? = null, timeout: Long? = null): UInt
@@ -65,6 +66,9 @@ private class AcurastRpcImpl(
 
     override suspend fun getBlockHash(blockNumber: BigInteger?, timeout: Long?): String? =
         chain.getBlockHash(blockNumber, timeout, engine)
+
+    override suspend fun getFinalizedBlockHash(timeout: Long?): String? =
+        chain.getFinalizedHead(timeout, engine)
 
     override suspend fun getHeader(blockHash: ByteArray?, timeout: Long?): Header =
         chain.getHeader(blockHash, timeout, engine)

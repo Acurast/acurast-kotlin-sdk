@@ -28,6 +28,16 @@ public class Chain : PalletRpc() {
         return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
     }
 
+    public suspend fun getFinalizedHead(
+        timeout: Long? = null,
+        engine: RpcEngine,
+    ): String? {
+        val response = engine.request(method = "chain_getFinalizedHead", timeout = timeout)
+
+        return if (response.has(JsonRpc.Key.RESULT)) response.nullableOptString(JsonRpc.Key.RESULT) else throw handleError(response)
+    }
+
+
     /**
      * Get the header of a given block.
      */
