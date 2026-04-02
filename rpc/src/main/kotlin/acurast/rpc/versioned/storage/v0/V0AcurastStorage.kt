@@ -70,6 +70,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): JobData?
 
+    public suspend fun getJobData(
+        jobIdentifiers: List<JobIdentifier>,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): Map<JobIdentifier, JobData?>
+
     /**
      * Get all job assignments for a given account.
      */
@@ -350,6 +356,39 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val keyId = changes.readChangeValueOrNull(1) { it.readByteArray(32) }
 
         return JobData(jobRegistration, keyId)
+    }
+
+    override suspend fun getJobData(
+        jobIdentifiers: List<JobIdentifier>,
+        blockHash: ByteArray?,
+        timeout: Long?
+    ): Map<JobIdentifier, JobData?> {
+        val registrationKeys = jobIdentifiers.map { Acurast_StoredJobRegistration(it) }
+        val keyIdKeys = jobIdentifiers.map { AcurastMarketplace_JobKeyIds(it) }
+
+        val registrationsStorage = state.queryStorageAt(
+            storageKeys = registrationKeys.map { it.toHex() },
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val keyIdsStorage = state.queryStorageAt(
+            storageKeys = keyIdKeys.map { it.toHex() },
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val registrationChanges = registrationsStorage.getOrNull(0)?.changes
+        val keyIdChanges = keyIdsStorage.getOrNull(0)?.changes
+
+        return jobIdentifiers.mapIndexed { index, jobIdentifier ->
+            val registration = registrationChanges?.readChangeValueOrNull(index) { JobRegistration.read(it, apiVersion = version) }
+            val keyId = keyIdChanges?.readChangeValueOrNull(index) { it.readByteArray(32) }
+
+            jobIdentifier to registration?.let { JobData(it, keyId) }
+        }.toMap()
     }
 
     override suspend fun getAssignedJobs(
