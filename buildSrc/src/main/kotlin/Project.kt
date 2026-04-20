@@ -1,4 +1,4 @@
 object Project {
     const val group = "com.github.acurast"
-    const val version = "0.1.38"
+    const val version = "0.1.39-beta01"
 }
