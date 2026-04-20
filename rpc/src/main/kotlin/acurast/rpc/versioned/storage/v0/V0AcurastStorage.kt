@@ -70,6 +70,12 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         timeout: Long? = null,
     ): JobData?
 
+    public suspend fun getJobData(
+        jobIdentifiers: List<JobIdentifier>,
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): Map<JobIdentifier, JobData?>
+
     /**
      * Get all job assignments for a given account.
      */
@@ -352,6 +358,39 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return JobData(jobRegistration, keyId)
     }
 
+    override suspend fun getJobData(
+        jobIdentifiers: List<JobIdentifier>,
+        blockHash: ByteArray?,
+        timeout: Long?
+    ): Map<JobIdentifier, JobData?> {
+        val registrationKeys = jobIdentifiers.map { Acurast_StoredJobRegistration(it) }
+        val keyIdKeys = jobIdentifiers.map { AcurastMarketplace_JobKeyIds(it) }
+
+        val registrationsStorage = state.queryStorageAt(
+            storageKeys = registrationKeys.map { it.toHex() },
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val keyIdsStorage = state.queryStorageAt(
+            storageKeys = keyIdKeys.map { it.toHex() },
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        val registrationChanges = registrationsStorage.getOrNull(0)?.changes
+        val keyIdChanges = keyIdsStorage.getOrNull(0)?.changes
+
+        return jobIdentifiers.mapIndexed { index, jobIdentifier ->
+            val registration = registrationChanges?.readChangeValueOrNull(index) { JobRegistration.read(it, apiVersion = version) }
+            val keyId = keyIdChanges?.readChangeValueOrNull(index) { it.readByteArray(32) }
+
+            jobIdentifier to registration?.let { JobData(it, keyId) }
+        }.toMap()
+    }
+
     override suspend fun getAssignedJobs(
         accountId: ByteArray,
         blockHash: ByteArray?,
@@ -570,10 +609,12 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         val updateInfoKey = AcurastProcessorManager_ProcessorUpdateInfo(accountId)
         val managementEndpointKey = managerId?.let { AcurastProcessorManager_ManagementEndpoint(it) }
         val processorMigrationDataKey = managerAccountId?.let { AcurastProcessorManager_ProcessorMigrationData(it) }
+        val advertisementKey = AcurastMarketplace_StoredAdvertisementRestriction(accountId)
 
         val storage = state.queryStorageAt(
             storageKeys = listOfNotNull(
                 updateInfoKey.toHex(),
+                advertisementKey.toHex(),
                 managementEndpointKey?.toHex(),
                 processorMigrationDataKey?.toHex(),
             ),
@@ -584,10 +625,13 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
         val changes = storage.getOrNull(0)?.changes ?: return ManagementData()
         val updateInfo = changes.readChangeValueOrNull(0) { ProcessorUpdateInfo.read(it) }
-        val managementEndpoint = changes.readChangeValueOrNull(1) { it.readString() }
-        val processorMigrationData = changes.readChangeValueOrNull(2) { ProcessorPairing.Proof.read(it) }
+        val advertisement = changes.readChangeValueOrNull(1) { MarketplaceAdvertisementRestriction.read(it) }
+        val managementEndpoint = if (managementEndpointKey != null) changes.readChangeValueOrNull(2) { it.readString() } else null
+        val processorMigrationData = if (processorMigrationDataKey != null) changes.readChangeValueOrNull(conditionalIndex(3, managementEndpointKey)) {
+            ProcessorPairing.Proof.read(it)
+        } else null
 
-        return ManagementData(updateInfo, managementEndpoint, processorMigrationData)
+        return ManagementData(updateInfo, managementEndpoint, processorMigrationData, advertisement)
     }
 
     override suspend fun getProcessorOverview(
@@ -618,6 +662,9 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
         return ProcessorOverview(managerId, isAttested, lastHeartbeat)
     }
 }
+
+internal fun conditionalIndex(target: Int, vararg previousKeys: Any?): Int =
+    target - previousKeys.count { it == null }
 
 private const val PALLET_ACURAST = "Acurast"
 private const val PALLET_ACURAST_PROCESSOR_MANAGER = "AcurastProcessorManager"

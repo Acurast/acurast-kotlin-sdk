@@ -586,6 +586,14 @@ class V0AcurastStorageTest {
     }
 
     @Test
+    fun `Storage conditional index`() {
+        assertEquals(1, conditionalIndex(1))
+        assertEquals(3, conditionalIndex(3, "a", "b"))
+        assertEquals(2, conditionalIndex(3, "a", null))
+        assertEquals(1, conditionalIndex(3, null, null))
+    }
+
+    @Test
     fun `Storage Query Acurast_StoredAttestation`() {
         val key = Acurast_StoredAttestation("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())
 
