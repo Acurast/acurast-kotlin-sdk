@@ -199,17 +199,27 @@ public data class PlannedExecution(val source: AccountId32, val startDelay: ULon
 public sealed interface ProcessorVersionRequirements {
     public val id: Byte
 
-    public data class Min(public val platform: UInt, public val buildNumber: UInt) : ProcessorVersionRequirements {
+    public data class Min(public val versions: List<Version>) : ProcessorVersionRequirements {
         override val id: Byte = ID
+
+        public data class Version(public val platform: UInt, public val buildNumber: UInt) {
+            public companion object {
+                public fun read(buffer: ByteBuffer): Version {
+                    val platform = buffer.readU32()
+                    val buildNumber = buffer.readU32()
+
+                    return Version(platform, buildNumber)
+                }
+            }
+        }
 
         public companion object {
             internal const val ID: Byte = 0
 
             public fun read(buffer: ByteBuffer): Min {
-                val platform = buffer.readU32()
-                val buildNumber = buffer.readU32()
+                val versions = buffer.readList { Version.read(this) }
 
-                return Min(platform, buildNumber)
+                return Min(versions)
             }
         }
     }
