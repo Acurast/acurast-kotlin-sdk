@@ -47,7 +47,7 @@ public data class JobRegistration(
                         BigInteger.ZERO,
                         null,
                         null,
-                        Runtime.NodeJS,
+                        JobRuntime.NodeJS,
                     )
                 )
 
@@ -127,7 +127,7 @@ public data class JobRequirements(
     public val reward: BigInteger,
     public val minReputation: BigInteger?,
     public val processorVersion: ProcessorVersionRequirements?,
-    public val runtime: Runtime,
+    public val runtime: JobRuntime,
 ) {
     public companion object {
         public fun read(buffer: ByteBuffer): JobRequirements {
@@ -136,7 +136,7 @@ public data class JobRequirements(
             val reward = buffer.readU128()
             val minReputation = buffer.readOptional { readU128() }
             val processorVersion = buffer.readOptional { ProcessorVersionRequirements.read(this) }
-            val runtime = Runtime.read(buffer)
+            val runtime = JobRuntime.read(buffer)
 
             return JobRequirements(
                 assignmentStrategy,
@@ -223,15 +223,18 @@ public sealed interface ProcessorVersionRequirements {
     }
 }
 
-public enum class Runtime(public val id: Byte) {
+public enum class JobRuntime(public val id: Byte) {
     NodeJS(0),
-    NodeJSWithBundle(1);
+    NodeJSWithBundle(1),
+    Shell(2),
+    ;
 
     public companion object {
-        public fun read(buffer: ByteBuffer): Runtime =
+        public fun read(buffer: ByteBuffer): JobRuntime =
             when (val id = buffer.readByte()) {
                 NodeJS.id -> NodeJS
                 NodeJSWithBundle.id -> NodeJSWithBundle
+                Shell.id -> Shell
                 else -> throw UnsupportedEncodingException("Unknown Runtime $id.")
             }
     }

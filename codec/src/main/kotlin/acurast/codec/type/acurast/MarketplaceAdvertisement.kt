@@ -23,6 +23,7 @@ public data class MarketplaceAdvertisement(
 public enum class JobModule(public val id: Byte) : ToU8a {
     DataEncryption(0),
     LLM(1),
+    Shell(2),
     ;
 
     override fun toU8a(): ByteArray = this.id.toU8a()
@@ -32,6 +33,7 @@ public enum class JobModule(public val id: Byte) : ToU8a {
             return when (val id = buffer.readByte()) {
                 DataEncryption.id -> DataEncryption
                 LLM.id -> LLM
+                Shell.id -> Shell
                 else -> throw UnsupportedEncodingException("Unknown JobModule $id.")
             }
         }
