@@ -3,7 +3,8 @@ package acurast.codec.type.manager
 import java.nio.ByteBuffer
 
 public enum class Platform(public val value: UInt) {
-    Android(0u);
+    Android(0u),
+    AndroidLite(2u);
 
     public companion object {
         public fun read(value: ByteBuffer): Platform =
