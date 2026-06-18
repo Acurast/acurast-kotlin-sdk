@@ -47,7 +47,7 @@ class Test {
 
         // If the vec length prefix is not consumed, this reads 0x00 (NodeJS)
         // from the middle of the version struct instead.
-        Assert.assertEquals(Runtime.NodeJSWithBundle, requirements.runtime)
+        Assert.assertEquals(JobRuntime.NodeJSWithBundle, requirements.runtime)
     }
 
     @Test
