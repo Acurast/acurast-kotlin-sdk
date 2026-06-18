@@ -645,6 +645,61 @@ class V0AcurastStorageTest {
     }
 
     @Test
+    fun `Storage Query Timestamp_Now`() {
+        val key = Timestamp_Now()
+
+        assertContentEquals(
+            "0xf0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb".hexToBa(),
+            key,
+        )
+    }
+
+    @Test
+    fun `Get the on-chain timestamp`() {
+        val method = "state_getStorage"
+        val params = JSONArray().apply {
+            put("f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb")
+        }
+
+        val jsonResponse = JSONObject("""
+            {
+                "jsonrpc": "2.0",
+                "result": "0x004cf1238e010000",
+                "id": 1
+            }
+        """.trimIndent())
+
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
+
+        val response = runBlocking {
+            acurastStorage.getTimestamp()
+        }
+
+        assertEquals(1710000000000L, response)
+
+        coVerify { rpcEngine.request(body = matchJsonRpcRequest(method, params), timeout = any()) }
+    }
+
+    @Test
+    fun `Return null timestamp when storage is empty`() {
+        val jsonResponse = JSONObject("""
+            {
+                "jsonrpc": "2.0",
+                "result": null,
+                "id": 1
+            }
+        """.trimIndent())
+
+        coEvery { rpcEngine.request(any(), any()) } returns jsonResponse
+
+        val response = runBlocking {
+            acurastStorage.getTimestamp()
+        }
+
+        assertEquals(null, response)
+    }
+
+    @Test
     fun `Storage Query AcurastProcessorManager_ManagerCounter`() {
         val key = AcurastProcessorManager_ManagerCounter("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".hexToBa())
 

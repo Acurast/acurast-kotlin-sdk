@@ -156,6 +156,15 @@ public interface V0AcurastStorage : VersionedAcurastStorage {
         blockHash: ByteArray? = null,
         timeout: Long? = null
     ): ProcessorOverview
+
+    /**
+     * Get the on-chain timestamp (in milliseconds) recorded in the given block,
+     * or the latest finalized state when [blockHash] is `null`.
+     */
+    public suspend fun getTimestamp(
+        blockHash: ByteArray? = null,
+        timeout: Long? = null,
+    ): Long?
 }
 
 internal fun V0AcurastStorage(engine: RpcEngine, state: State): V0AcurastStorage = V0AcurastStorageImpl(engine, state)
@@ -661,6 +670,24 @@ internal open class V0AcurastStorageImpl(private val engine: RpcEngine, private 
 
         return ProcessorOverview(managerId, isAttested, lastHeartbeat)
     }
+
+    override suspend fun getTimestamp(
+        blockHash: ByteArray?,
+        timeout: Long?,
+    ): Long? {
+        val storage = state.getStorage(
+            storageKey = Timestamp_Now(),
+            blockHash,
+            timeout,
+            engine,
+        )
+
+        if (storage.isNullOrEmpty()) {
+            return null
+        }
+
+        return ByteBuffer.wrap(storage.hexToBa()).readU64().toLong()
+    }
 }
 
 internal fun conditionalIndex(target: Int, vararg previousKeys: Any?): Int =
@@ -674,6 +701,11 @@ private const val PALLET_ACURAST_TOKEN_CONVERSION = "AcurastTokenConversion"
 private const val PALLET_SYSTEM = "System"
 private const val PALLET_UNIQUES = "Uniques"
 private const val PALLET_VESTING = "Vesting"
+private const val PALLET_TIMESTAMP = "Timestamp"
+
+internal fun Timestamp_Now(): ByteArray =
+    PALLET_TIMESTAMP.toByteArray().xxH128() +
+            "Now".toByteArray().xxH128()
 
 internal fun Acurast_StoredAttestation(accountId: ByteArray): ByteArray =
     PALLET_ACURAST.toByteArray().xxH128() +
