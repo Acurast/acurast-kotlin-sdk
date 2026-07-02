@@ -6,7 +6,7 @@ import org.json.JSONObject
 import kotlin.random.Random
 
 public interface RpcEngine {
-    public val id: String
+    public suspend fun id(): String
     public suspend fun request(body: JSONObject, timeout: Long? = null): JSONObject
 }
 

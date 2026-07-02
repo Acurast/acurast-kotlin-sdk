@@ -9,8 +9,7 @@ public class HttpRpcEngine internal constructor(
     private val config: HttpRpcEngineConfig,
     private val client: HttpClient,
 ) : RpcEngine {
-    override val id: String
-        get() = config.url
+    override suspend fun id(): String = config.url
 
     override suspend fun request(body: JSONObject, timeout: Long?): JSONObject = with(config) {
         val body = body.toString()
