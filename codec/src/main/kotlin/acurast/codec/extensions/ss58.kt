@@ -1,6 +1,6 @@
 package acurast.codec.extensions
 
-import org.bitcoinj.core.Base58
+import org.bitcoinj.base.Base58
 import org.bouncycastle.crypto.digests.Blake2bDigest
 
 /**
