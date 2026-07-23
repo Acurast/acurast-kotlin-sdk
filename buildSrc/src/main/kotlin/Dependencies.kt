@@ -2,8 +2,8 @@ object Dependencies {
     private object Version {
         const val xxHash = "1.8.0"
         const val json = "20220320"
-        const val bouncyCastle = "1.70"
-        const val bitcoinj = "0.16.1"
+        const val bouncyCastle = "1.83"
+        const val bitcoinj = "0.17.1"
         const val gson = "2.10"
 
         const val ktor = "2.3.5"
@@ -23,7 +23,7 @@ object Dependencies {
     const val ktorSerializationKotlinxJson = "io.ktor:ktor-serialization-kotlinx-json:${Version.ktor}"
     const val ktorLoggingJvm = "io.ktor:ktor-client-logging-jvm:${Version.ktor}"
 
-    const val bouncyCastle = "org.bouncycastle:bcprov-jdk15on:${Version.bouncyCastle}"
+    const val bouncyCastle = "org.bouncycastle:bcprov-jdk15to18:${Version.bouncyCastle}"
     const val bitcoinj = "org.bitcoinj:bitcoinj-core:${Version.bitcoinj}"
 
     // Test
