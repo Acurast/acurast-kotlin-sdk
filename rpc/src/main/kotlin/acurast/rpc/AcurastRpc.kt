@@ -1,6 +1,7 @@
 package acurast.rpc
 
 import acurast.codec.extensions.*
+import acurast.codec.metadata.RuntimeMetadata
 import acurast.codec.type.UInt128
 import acurast.codec.type.acurast.JobIdentifier
 import acurast.codec.type.manager.ProcessorUpdateInfo
@@ -29,6 +30,10 @@ public interface AcurastRpc {
 
     public suspend fun getApiVersion(blockHash: ByteArray? = null, timeout: Long? = null): UInt
     public suspend fun getRuntimeVersion(blockHash: ByteArray? = null, timeout: Long? = null): RuntimeVersion
+
+    /** The runtime metadata at [blockHash] (the latest block if `null`). */
+    public suspend fun getMetadata(blockHash: ByteArray? = null, timeout: Long? = null): RuntimeMetadata =
+        State().getMetadata(blockHash, timeout, engine)
 
     public suspend fun getUpdateInfo(accountId: ByteArray, blockHash: ByteArray? = null, timeout: Long? = null): ProcessorUpdateInfo?
     public suspend fun getKnownBinaryHash(version: ProcessorVersion, blockHash: ByteArray? = null, timeout: Long? = null): ByteArray?

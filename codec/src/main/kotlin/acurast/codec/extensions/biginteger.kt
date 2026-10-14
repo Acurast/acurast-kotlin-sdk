@@ -27,7 +27,7 @@ public fun BigInteger.compactMode(): CompactMode {
 }
 
 public fun BigInteger.toCompactU8a(): ByteArray {
-    if (compareTo(2.0.pow(30.0).minus(1).toLong().toBigInteger()) < 0) {
+    if (compareTo(2.0.pow(30.0).minus(1).toLong().toBigInteger()) <= 0) {
         return toLong().toCompactU8a()
     }
     val arr = toByteArray().reversedArray().trimTrailingZeros()

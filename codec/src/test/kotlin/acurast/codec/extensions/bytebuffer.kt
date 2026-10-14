@@ -69,4 +69,46 @@ class ByteBufferTest {
             decoded.toInt(),
         )
     }
+
+    @Test
+    fun readU128_highBitIsUnsigned() {
+        val buffer = ByteBuffer.wrap("ffffffffffffffffffffffffffffffff".hexToBa())
+        Assert.assertEquals(java.math.BigInteger.TWO.pow(128) - java.math.BigInteger.ONE, buffer.readU128())
+    }
+
+    @Test
+    fun readCompact_fourByteUpperBound() {
+        val value = ByteBuffer.wrap("feffffff".hexToBa())
+        Assert.assertEquals(0x3fffffff.toBigInteger(), value.readCompactInteger())
+    }
+
+    @Test
+    fun readCompact_bigIntegerHighBitIsUnsigned() {
+        val value = ByteBuffer.wrap("13ffffffffffffffff".hexToBa())
+        Assert.assertEquals(java.math.BigInteger.TWO.pow(64) - java.math.BigInteger.ONE, value.readCompactInteger())
+    }
+
+    @Test
+    fun readCompact_roundTripsEncoding() {
+        listOf(0L, 63L, 64L, 16_383L, 16_384L, 0x3fffffffL, 0x40000000L, Long.MAX_VALUE).forEach {
+            val value = it.toBigInteger()
+            Assert.assertEquals(value, ByteBuffer.wrap(value.toCompactU8a()).readCompactInteger())
+        }
+    }
+
+    @Test
+    fun readString_decodesUtf8() {
+        val buffer = ByteBuffer.wrap(byteArrayOf(0x0c) + "\u00fcb".toByteArray(Charsets.UTF_8))
+        Assert.assertEquals("\u00fcb", buffer.readString())
+    }
+
+    @Test(expected = ScaleDecoderException::class)
+    fun readBoolean_rejectsInvalidValues() {
+        ByteBuffer.wrap(byteArrayOf(2)).readBoolean()
+    }
+
+    @Test(expected = ScaleDecoderException::class)
+    fun readByteArray_rejectsLengthsBeyondTheData() {
+        ByteBuffer.wrap("1000".hexToBa()).readByteArray()
+    }
 }
