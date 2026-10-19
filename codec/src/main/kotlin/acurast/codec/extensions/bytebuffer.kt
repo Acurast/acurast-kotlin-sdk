@@ -4,7 +4,6 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.Charset
 import kotlin.math.absoluteValue
 
 public class ScaleDecoderException(msg: String?) : Exception(msg)
@@ -23,27 +22,35 @@ public fun ByteBuffer.readU8(): UByte = littleEndian { get().toUByte() }
 public fun ByteBuffer.readU16(): UShort = littleEndian { short.toUShort() }
 public fun ByteBuffer.readU32(): UInt = littleEndian { int.toUInt() }
 public fun ByteBuffer.readU64(): ULong = littleEndian { long.toULong() }
-public fun ByteBuffer.readU128(): BigInteger = BigInteger(readByteArray(16).reversedArray())
-public fun ByteBuffer.readU256(): BigInteger = BigInteger(readByteArray(32).reversedArray())
+public fun ByteBuffer.readU128(): BigInteger = readUnsigned(16)
+public fun ByteBuffer.readU256(): BigInteger = readUnsigned(32)
+
+/** Reads a little-endian unsigned integer of [byteCount] bytes. */
+public fun ByteBuffer.readUnsigned(byteCount: Int): BigInteger = BigInteger(1, readByteArray(byteCount).reversedArray())
+
+/** Reads a little-endian two's complement signed integer of [byteCount] bytes. */
+public fun ByteBuffer.readSigned(byteCount: Int): BigInteger = BigInteger(readByteArray(byteCount).reversedArray())
 
 public fun ByteBuffer.readByte(): Byte = littleEndian {
     get()
 }
 
 public fun ByteBuffer.readString(): String = littleEndian {
-    val size = readCompactInteger().toInt()
-    val ba = ByteArray(size)
-    get(ba)
-    ba.toString(charset = Charset.defaultCharset())
+    readByteArray(readCompactInt()).toString(Charsets.UTF_8)
 }
 
 public fun ByteBuffer.readBoolean(): Boolean = littleEndian {
-    return this.get() == 0x01.toByte()
+    when (val value = this.get().toInt()) {
+        0 -> false
+        1 -> true
+        else -> throw ScaleDecoderException("Invalid boolean value $value")
+    }
 }
 
 public fun <T> ByteBuffer.readList(elementParser: ByteBuffer.() -> T): List<T> = littleEndian {
-    val size = readCompactInteger().toInt()
-    val list = ArrayList<T>(size)
+    val size = readCompactInt()
+    // The size is untrusted input: don't preallocate more than the remaining data could hold.
+    val list = ArrayList<T>(minOf(size, remaining()))
     for (i in 0 until size) {
         list.add(this.elementParser())
     }
@@ -53,34 +60,25 @@ public fun <T> ByteBuffer.readList(elementParser: ByteBuffer.() -> T): List<T> =
 public fun ByteBuffer.readCompactInteger(): BigInteger = littleEndian {
     val compactByte = this.get().toInt() and 0xff
 
-    val compactLength = when (compactByte % 4) {
-        0 -> 1
-        1 -> 2
-        2 -> 4
-        else -> 5 + (compactByte - 3) / 4
-    }
-
-    return when (compactLength) {
-        1 -> BigInteger.valueOf(compactByte.toLong() shr 2)
-        2 -> {
-            this.position(position() - 1)
-            ((short.toInt() and 0xffff) shr 2).toBigInteger()
-        }
-        4 -> {
-            val ba = ByteArray(compactLength - 1)
-            get(ba)
-            BigInteger((byteArrayOf(compactByte.toByte()) + ba).reversedArray()).divide(BigInteger.valueOf(4))
-        }
-        else -> {
-            val ba = ByteArray(compactLength - 1)
-            get(ba)
-            BigInteger(ba.reversedArray())
-        }
+    return when (compactByte and 0b11) {
+        0b00 -> BigInteger.valueOf((compactByte shr 2).toLong())
+        0b01 -> BigInteger.valueOf(((compactByte or ((get().toInt() and 0xff) shl 8)) shr 2).toLong())
+        0b10 -> BigInteger.valueOf((compactByte.toLong() or (readUnsigned(3).toLong() shl 8)) shr 2)
+        else -> readUnsigned((compactByte shr 2) + 4)
     }
 }
 
+/** Reads a compact-encoded length or index, which must fit an [Int]. */
+public fun ByteBuffer.readCompactInt(): Int {
+    val value = readCompactInteger()
+    if (value.bitLength() > 31) throw ScaleDecoderException("Compact value $value out of Int range")
+    return value.toInt()
+}
+
 public fun ByteBuffer.readByteArray(n: Int? = null): ByteArray = littleEndian {
-    ByteArray(n ?: readCompactInteger().toInt()).apply { get(this) }
+    val size = n ?: readCompactInt()
+    if (size < 0 || size > remaining()) throw ScaleDecoderException("Cannot read $size bytes, ${remaining()} remaining")
+    ByteArray(size).apply { get(this) }
 }
 
 public fun ByteBuffer.readBytes(offset: Int): ByteArray = littleEndian {

@@ -2,12 +2,11 @@ package acurast.rpc.pallet
 
 import acurast.codec.extensions.hexToBa
 import acurast.codec.extensions.toHex
+import acurast.codec.metadata.RuntimeMetadata
 import acurast.rpc.utils.JsonRpc
 import acurast.rpc.engine.RpcEngine
 import acurast.rpc.engine.request
-import acurast.rpc.type.RuntimeMetadataV14
 import acurast.rpc.type.StorageQueryResult
-import acurast.rpc.type.readMetadata
 import acurast.rpc.utils.nullableOptString
 import org.json.JSONArray
 import java.nio.ByteBuffer
@@ -136,7 +135,7 @@ public class State : PalletRpc() {
         blockHash: ByteArray? = null,
         timeout: Long? = null,
         engine: RpcEngine,
-    ): RuntimeMetadataV14 {
+    ): RuntimeMetadata {
         val params = JSONArray().apply {
             // Add block hash if provided
             blockHash?.let { put(it.toHex()) }
@@ -145,6 +144,6 @@ public class State : PalletRpc() {
         val response = engine.request(method = "state_getMetadata", params = params, timeout = timeout)
         val result = response.nullableOptString(JsonRpc.Key.RESULT) ?: throw handleError(response)
 
-        return ByteBuffer.wrap(result.hexToBa()).readMetadata()
+        return RuntimeMetadata.decode(result.hexToBa())
     }
 }
