@@ -37,6 +37,7 @@ class CallDecoderTest {
         assertEquals("dest", dest.name)
         val address = assertIs<Value.Variant>(dest.value)
         assertEquals("Id", address.name)
+        assertEquals(listOf("sp_runtime", "multiaddress", "MultiAddress"), address.typePath)
         assertIs<Value.Account>(address.fields.single().value)
         assertEquals("value", value.name)
         assertEquals(Value.Number(BigInteger.valueOf(1_234_567_890_000)), value.value)
