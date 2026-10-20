@@ -37,7 +37,15 @@ public sealed interface Value {
     public class Bytes(public val value: ByteArray) : Value
     public class Account(public val accountId: ByteArray) : Value
     public class Composite(public val fields: List<Argument>) : Value
-    public class Variant(public val name: String, public val fields: List<Argument>) : Value
+    /**
+     * An enum value: its variant [name] and [fields], and the [typePath] of the enum it belongs to
+     * (e.g. `sp_runtime::multiaddress::MultiAddress`), which tells variants with the same name apart.
+     */
+    public class Variant(
+        public val name: String,
+        public val fields: List<Argument>,
+        public val typePath: List<String> = emptyList(),
+    ) : Value
     public class Sequence(public val items: List<Value>) : Value
     public class Call(public val call: DecodedCall) : Value
 }
@@ -105,11 +113,12 @@ private class CallDecoder(private val metadata: RuntimeMetadata, private val buf
     }
 
     private fun decodeVariant(typeId: Int, depth: Int): Value.Variant {
-        val def = metadata.type(typeId).def as? TypeDef.VariantType ?: fail("Type $typeId is not an enum")
+        val type = metadata.type(typeId)
+        val def = type.def as? TypeDef.VariantType ?: fail("Type $typeId is not an enum")
         val index = buffer.readU8().toInt()
         val variant = def.variants.firstOrNull { it.index == index } ?: fail("Unknown variant $index of type $typeId")
 
-        return Value.Variant(variant.name, decodeFields(variant.fields, depth))
+        return Value.Variant(variant.name, decodeFields(variant.fields, depth), type.path)
     }
 
     private fun decodeFields(fields: List<RuntimeMetadata.Field>, depth: Int): List<Argument> =
