@@ -14,6 +14,7 @@ import acurast.rpc.pallet.State
 import acurast.rpc.type.Header
 import acurast.rpc.type.UnsupportedApiVersion
 import acurast.rpc.versioned.storage.AcurastStorage
+import acurast.rpc.versioned.storage.ApiVersionTrackingState
 import acurast.rpc.versioned.storage.v0.V0AcurastStorage
 import acurast.rpc.versioned.storage.v0.compatV0
 import acurast.rpc.versioned.storage.v1.compatV1
@@ -41,6 +42,13 @@ public interface AcurastRpc {
     public suspend fun call(method: String, data: ByteArray? = null, blockHash: ByteArray? = null, timeout: Long? = null): String?
 
     public fun storage(version: UInt): AcurastStorage
+
+    /**
+     * Like [storage], but every storage read also reads the API version, in the same request and at the same
+     * block, and reports it to [onApiVersion] - so a caller can tell whether [version] still held, without a
+     * separate [getApiVersion] request.
+     */
+    public fun storage(version: UInt, onApiVersion: (UInt) -> Unit): AcurastStorage
 }
 
 public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
@@ -53,10 +61,12 @@ public fun AcurastRpc(engine: RpcEngine): AcurastRpc {
         state,
         author,
         chain,
-        storages = listOf(
-            V0AcurastStorage(engine, state).compatV0(),
-            V1AcurastStorage(engine, state).compatV1(),
-        ).associateBy { it.version },
+        storageFactory = { storageState ->
+            listOf(
+                V0AcurastStorage(engine, storageState).compatV0(),
+                V1AcurastStorage(engine, storageState).compatV1(),
+            ).associateBy { it.version }
+        },
     )
 }
 
@@ -65,8 +75,9 @@ private class AcurastRpcImpl(
     private val state: State,
     private val author: Author,
     private val chain: Chain,
-    private val storages: Map<UInt, AcurastStorage>,
+    private val storageFactory: (State) -> Map<UInt, AcurastStorage>,
 ) : AcurastRpc {
+    private val storages: Map<UInt, AcurastStorage> = storageFactory(state)
 
     override suspend fun getBlockHash(blockNumber: BigInteger?, timeout: Long?): String? =
         chain.getBlockHash(blockNumber, timeout, engine)
@@ -141,6 +152,9 @@ private class AcurastRpcImpl(
         state.call(method, data, blockHash, timeout, engine)
 
     override fun storage(version: UInt): AcurastStorage = storages[version] ?: failWithUnsupportedApiVersion(version)
+
+    override fun storage(version: UInt, onApiVersion: (UInt) -> Unit): AcurastStorage =
+        storageFactory(ApiVersionTrackingState(onApiVersion))[version] ?: failWithUnsupportedApiVersion(version)
 
     private fun failWithUnsupportedApiVersion(version: UInt): Nothing =
         throw UnsupportedApiVersion(version)

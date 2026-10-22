@@ -16,7 +16,7 @@ public data class RuntimeVersion(
     val transactionVersion: Int,
 )
 
-public class State : PalletRpc() {
+public open class State : PalletRpc() {
     /**
      * Perform a call to a builtin on the chain.
      */
@@ -45,7 +45,7 @@ public class State : PalletRpc() {
     /**
      * Query storage.
      */
-    public suspend fun getStorage(
+    public open suspend fun getStorage(
         storageKey: ByteArray,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
@@ -66,7 +66,7 @@ public class State : PalletRpc() {
     /**
      * Query storage.
      */
-    public suspend fun queryStorageAt(
+    public open suspend fun queryStorageAt(
         storageKeys: List<String>,
         blockHash: ByteArray? = null,
         timeout: Long? = null,
