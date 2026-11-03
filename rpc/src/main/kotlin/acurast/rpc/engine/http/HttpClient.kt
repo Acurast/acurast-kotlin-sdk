@@ -14,8 +14,6 @@ public typealias HttpParameter = Pair<String, String?>
  * HTTP client provider interface.
  *
  * Use this interface to register a custom HTTP client implementation.
- * See:
- *  - [KtorHttpClient] for a ready-to-use implementation.
  */
 public interface HttpClient {
 
