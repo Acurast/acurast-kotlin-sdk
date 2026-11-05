@@ -1,8 +1,6 @@
 package acurast.rpc.engine.http
 
 import acurast.rpc.engine.RpcEngine
-import acurast.rpc.engine.http.ktor.KtorHttpClient
-import acurast.rpc.engine.http.ktor.KtorLogger
 import org.json.JSONObject
 
 public class HttpRpcEngine internal constructor(
@@ -42,15 +40,9 @@ public data class MutableHttpRpcEngineConfig(override val url: String) : HttpRpc
     override var connectionTimeout: Long? = null
 }
 
-private fun DefaultHttpClient(): HttpClient = KtorHttpClient(object : KtorLogger() {
-    override fun log(message: String) {
-        println(message)
-    }
-})
-
 public fun HttpRpcEngine(
     url: String,
-    client: HttpClient = DefaultHttpClient(),
+    client: HttpClient,
     block: MutableHttpRpcEngineConfig.() -> Unit = {},
 ): HttpRpcEngine {
     val config = MutableHttpRpcEngineConfig(url).apply(block).apply {
